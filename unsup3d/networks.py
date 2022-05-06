@@ -14,6 +14,10 @@ class DepthNet_v2():
         pass
 '''
 
+'''
+    Should we define the renderer functions inside these classes,
+    instead of inside the Renderer() class?
+'''
 
 
 class AlbedoNet_v1():
