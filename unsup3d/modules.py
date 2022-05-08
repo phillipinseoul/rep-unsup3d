@@ -9,15 +9,6 @@ import torch.nn as nn
 class Encoder(nn.Module):
     def __init__(self, cout):
         '''
-        Encoder:
-            Conv(3, 32, 4, 2, 1) + ReLU 32
-            Conv(32, 64, 4, 2, 1) + ReLU 16
-            Conv(64, 128, 4, 2, 1) + ReLU 8
-            Conv(128, 256, 4, 2, 1) + ReLU 4
-            Conv(256, 256, 4, 1, 0) + ReLU 1
-            Conv(256, cout, 1, 1, 0) + Tanh! output 1
-        '''
-        '''
         * view: cout = 6
         * lighting: cout = 4
         '''
@@ -34,9 +25,9 @@ class Encoder(nn.Module):
             nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
             nn.ReLU(),
             nn.Conv2d(256, 256, kernel_size=4, stride=1, padding=0),
-            nn.ReLU()
+            nn.ReLU(),
             nn.Conv2d(256, cout, kernel_size=1, stride=1, padding=0),
-            nm.Tanh()
+            nn.Tanh()
         ]
         self.encoder = nn.Sequential(*encoder)
 
@@ -48,30 +39,6 @@ class Encoder(nn.Module):
 # network architecture for depth, albedo
 class AutoEncoder(nn.Module):
     def __init__(self, cout):
-        '''
-        Encoder: 
-            Conv(3, 64, 4, 2, 1) + GN(16) + LReLU(0.2) 32
-            Conv(64, 128, 4, 2, 1) + GN(32) + LReLU(0.2) 16
-            Conv(128, 256, 4, 2, 1) + GN(64) + LReLU(0.2) 8
-            Conv(256, 512, 4, 2, 1) + LReLU(0.2) 4
-            Conv(512, 256, 4, 1, 0) + ReLU 1
-        Decoder:
-            Deconv(256, 512, 4, 1, 0) + ReLU 4
-            Conv(512, 512, 3, 1, 1) + ReLU 4
-            Deconv(512, 256, 4, 2, 1) + GN(64) + ReLU 8
-            Conv(256, 256, 3, 1, 1) + GN(64) + ReLU 8
-            Deconv(256, 128, 4, 2, 1) + GN(32) + ReLU 16
-            Conv(128, 128, 3, 1, 1) + GN(32) + ReLU 16
-            Deconv(128, 64, 4, 2, 1) + GN(16) + ReLU 32
-            Conv(64, 64, 3, 1, 1) + GN(16) + ReLU 32
-
-            Upsample(2) 64
-            
-            Conv(64, 64, 3, 1, 1) + GN(16) + ReLU 64
-            Conv(64, 64, 5, 1, 2) + GN(16) + ReLU 64
-            Conv(64, cout, 5, 1, 2) + Tanh! output 64
-        '''
-
         '''
         * depth: cout=1
         * albedo: cout=3
@@ -142,23 +109,6 @@ class AutoEncoder(nn.Module):
 # network architecture for confidence map
 class Conf_Conv(nn.Module):
     def __init__(self):
-        '''
-        Encoder: 
-            Conv(3, 64, 4, 2, 1) + GN(16) + LReLU(0.2) 32
-            Conv(64, 128, 4, 2, 1) + GN(32) + LReLU(0.2) 16
-            Conv(128, 256, 4, 2, 1) + GN(64) + LReLU(0.2) 8
-            Conv(256, 512, 4, 2, 1) + LReLU(0.2) 4
-            Conv(512, 128, 4, 1, 0) + ReLU 1
-        Decoder:
-            Deconv(128, 512, 4, 1, 0) + ReLU 4
-            Deconv(512, 256, 4, 2, 1) + GN(64) + ReLU 8
-            Deconv(256, 128, 4, 2, 1) + GN(32) + ReLU 16
-                Conv(128, 2, 3, 1, 1) + SoftPlus! --> output 16
-            Deconv(128, 64, 4, 2, 1) + GN(16) + ReLU 32
-            Deconv(64, 64, 4, 2, 1) + GN(16) + ReLU 64
-            Conv(64, 2, 5, 1, 2) + SoftPlus! --> output 64
-        '''
-
         '''
         `Conf_Conv` outputs two pairs of confidence maps at different
         spatial resolutions for i) photometric and ii) perceptual losses

@@ -1,11 +1,17 @@
 '''
 
 '''
-
+from .modules import Encoder, AutoEncoder, Conf_Conv
 
 
 class DepthNet_v1():
     def __init__(self):
+        self.depth_net = AutoEncoder(1)       # AutoEncoder, cout=1
+
+    def depth_to_normal(self):
+        pass
+
+    def normal_to_shading(self):
         pass
 
 '''
@@ -22,22 +28,20 @@ class DepthNet_v2():
 
 class AlbedoNet_v1():
     def __init__(self):
-        pass
+        self.alb_net = AutoEncoder(3)       # AutoEncoder, cout=3
 
+    def alb_to_canon(self):
+        pass
 
 
 class LightNet_v1():
     def __init__(self):
-        pass
-
-
-
+        self.light_net = Encoder(4)       # Encoder, cout=4
 
 
 class ViewNet_v1():
     def __init__(self):
-        pass
-
+        self.view_net = Encoder(6)       # Encoder, cout=6
 
 
 class ConfNet_v1():
