@@ -152,7 +152,8 @@ class Conf_Conv(nn.Module):
             nn.ConvTranspose2d(64, 64, kernel_size=4, stride=2, padding=1),
             nn.GroupNorm(16, 64),
             nn.ReLU(),
-            nn.Conv2d(64, 2, kernel_size=5, stride=1, padding=2)
+            nn.Conv2d(64, 2, kernel_size=5, stride=1, padding=2),
+            nn.SoftPlus()
         ]
 
         self.encoder = nn.Sequential(*encoder)
