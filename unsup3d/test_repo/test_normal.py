@@ -30,6 +30,13 @@ plt.title('depth_map')
 plt.imshow(depth_map)
 plt.savefig('depth_map.png')
 
+d, h, w = depth.shape
+# print(depth.shape)
+
+print(d)
+print(h)
+print(w)
+
 # now, calculate normal map from depth map
 normal_map = depth.repeat(3, 1, 1)
 
