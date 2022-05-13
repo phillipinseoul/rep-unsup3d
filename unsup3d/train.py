@@ -5,6 +5,7 @@ import pstats
 import torch
 import torch.optim as optims
 from torch.utils.data import DataLoader
+#from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import os.path as path
 import os
@@ -34,10 +35,15 @@ class Trainer():
 
         '''path relevant'''
         self.exp_name = '0508_test'
-        self.save_path = path.join('./experiments', self.exp_name)
-        os.makedirs(self.save_path, exist_ok = True)
+        self.exp_path = path.join('./experiments', self.exp_name)
+        os.makedirs(self.exp_path, exist_ok=True)
+        self.save_path = path.join(self.exp_path, 'models')
+        os.makedirs(self.save_path, exist_ok=True)
         self.best_path = path.join(self.save_path, 'best.pt')
         self.load_path = None
+
+        '''logger setting'''
+        self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
 
         '''implement dataloader'''
         self.datasets = CelebA()
@@ -98,7 +104,6 @@ class Trainer():
             # calculate epch_loss
             epch_loss += loss.detach().cpu()
             cnt+=1
-
 
             if i%30 == 0:
                 print(i,"step, loss : ", loss.detach().cpu().item())
