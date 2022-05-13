@@ -3,16 +3,9 @@
 '''
 from .modules import Encoder, AutoEncoder, Conf_Conv
 
-
 class DepthNet_v1():
     def __init__(self):
         self.depth_net = AutoEncoder(1)       # AutoEncoder, cout=1
-
-'''
-class DepthNet_v2():
-    def __init__(self):
-        pass
-'''
 
 class AlbedoNet_v1():
     def __init__(self):
