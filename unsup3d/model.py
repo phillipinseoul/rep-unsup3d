@@ -1,12 +1,16 @@
 
+from cv2 import norm
 import torch
 import torch.nn as nn
 import torchvision.models as pre_model
 import torchvision.transforms as transforms
 import tensorboardX
 
-from unsup3d.networks import ImageDecomp
+from unsup3d.networks import ImageDecomp, ConfNet_v1
 from unsup3d.utils import ImageFormation
+from unsup3d.renderer import RenderPipeline
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PhotoGeoAE():
     def __init__(self, depth_v='v0', alb_v='v0', light_v='v0', view_v='v0'):
@@ -24,7 +28,7 @@ class PhotoGeoAE():
 
         '''pipeline utils'''
         self.imgForm = ImageFormation(size=64)
-
+        self.render = RenderPipeline(device=device)
         
 
     def get_photo_loss(self, img1, img2, conf):
@@ -50,21 +54,46 @@ class PhotoGeoAE():
         view = self.imgDecomp.get_view(input)           # B x 6 x 1 x 1
         light = self.imgDecomp.get_light(input)         # B x 4 x 1 x 1
 
-        conf_percep, conf = self.netC(input)# b 1 H/4 W/4 .. b 1 H W 
+        raw_conf_percep, raw_conf = self.netC(input)    # B 2 W/4 H/4 ,, B 2 W H 
+
+        conf_percep = raw_conf_percep[:,0:1,:,:]        # B x 1 x W/4 x H/4
+        conf = raw_conf[:,0:1,:,:]                      # B x 1 x W x H
+
+        f_conf_percep = raw_conf_percep[:,1:2,:,:]        # B x 1 x W/4 x H/4
+        f_conf = raw_conf[:,1:2,:,:]                      # B x 1 x W x H
+
+        f_albedo = torch.flip(albedo, dims = [3])      # in pytorch, we should flip the last dimension
+        f_depth = torch.flip(depth, dims = [3])        # we made comment as W x H order, but in fact it's H x W (torch default) 
+                                                       # So here, I flipped based on last dim
+
+        ############################################ need to check flipping (05/14, inhee) !!!
 
         '''implement some pipeline'''
+        # unflipped case
+        normal = self.imgForm.depth_to_normal(depth)             # B x 3 x W x H
+        shading = self.imgForm.normal_to_shading(normal, light)  # B x 1 x W x H 
+        canon_img = self.imgForm.alb_to_canon(albedo, shading)   # B x 3 x W x H
+        org_img, org_depth = self.render(depth, canon_img, view)
 
-        recon_output = None
-        flipped_recon_ouptut = None
+        # flipped case
+        f_normal = self.imgForm.depth_to_normal(f_depth)             # B x 3 x W x H
+        f_shading = self.imgForm.normal_to_shading(f_normal, light)  # B x 1 x W x H 
+        f_canon_img = self.imgForm.alb_to_canon(f_albedo, f_shading) # B x 3 x W x H
 
-        '''calculate loss here'''
+        f_org_img, f_org_depth = self.render(f_depth, f_canon_img, view)
+
+        # final results
+        recon_output = org_img
+        f_recon_output = f_org_img
+
+        '''calculate loss'''
         percep_loss = self.percep(input, recon_output, conf_percep) # (b_size)
         photoloss = self.get_photo_loss(input, recon_output, conf)  # (b_size)
         org_loss = photoloss + self.lambda_p * percep_loss          # (b_size)
         
-        f_percep_loss = self.percep(input, recon_output, conf_percep) # (b_size)
-        f_photoloss = self.get_photo_loss(input, recon_output, conf)  # (b_size)
-        flip_loss = f_photoloss + self.lambda_p * f_percep_loss       # (b_size)
+        f_percep_loss = self.percep(input, f_recon_output, f_conf_percep) # (b_size)
+        f_photoloss = self.get_photo_loss(input, f_recon_output, f_conf)  # (b_size)
+        flip_loss = f_photoloss + self.lambda_p * f_percep_loss           # (b_size)
         
         tot_loss = org_loss + self.lambda_f * flip_loss
 

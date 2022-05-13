@@ -70,16 +70,11 @@ class RenderPipeline(nn.Module):
             light_direction=[0,1,0]
         )
 
-
-
         # define faces here
         # it can be reused, unless the input shape or batch_size changes
         # we should drop last-batch on dataloader!!!!!  ----------------probably erroneous-----------------> (05/15 inhee)
         self.faces = get_faces(B,W,H).to(self.device)
-
-
         
-
 
     def canon_depth_to_3d(self, canon_depth):
         '''
@@ -245,15 +240,28 @@ class RenderPipeline(nn.Module):
         input:
         - canon_depth : canonical depth map from DephtNet (B x 1 x W x H)
         - canon_img : canonical image from pipeline, (B x 3 x W x H)
-        - views : raw output of ViewNet, (-0.1 ~ 0.1) (B x 6)  
+        - views : raw output of ViewNet, (-0.1 ~ 0.1) (+60, -60) (B x 6)  
         output:
-        - org_pc : original point cloud (B x 3 x W x H)
+        - org_img : original image (B x 3 x W x H)
+        - org_depth : original depth map (B x 1 x W x H)
 
-        it applies camera viewpoint, by rotating & translating
-        output = Rot ( input ) + Trans
-
-        (05/13 inhee)
+        (05/14 inhee)
         '''
+        rotates = views[:,0:3]            # B x 3, (-1.0  ~ 1.0)
+        rotates = rotates * 60.0        # B x 3, (-60.0 ~ 60.0)
+        trans = views[:,3:6]                # B x 3, (-1.0  ~ 1.0)
+        trans = trans / 10.0                # B x 3, (-0.1  ~ 0.1)
+
+
+        canon_pc = self.canon_depth_to_3d(canon_depth)
+        org_pc = self.canon_3d_to_org_3d(canon_pc, rotates, trans)
+        org_depth = self.org_3d_to_org_depth(org_pc)
+        warp_grid = self.get_warp_grid(org_depth)
+        org_img = self.get_org_image(warp_grid, canon_img)
+
+        return org_img, org_depth
+        
+
 
 
 
