@@ -5,26 +5,25 @@ import torchvision.models as pre_model
 import torchvision.transforms as transforms
 import tensorboardX
 
-from unsup3d.networks import AlbedoNet_v1, ConfNet_v1, DepthNet_v1, LightNet_v1, ViewNet_v1
+from unsup3d.networks import ImageDecomp
 from unsup3d.utils import ImageFormation
 
 class PhotoGeoAE():
-    def __init__(self):
+    def __init__(self, depth_v='v0', alb_v='v0', light_v='v0', view_v='v0'):
         '''initialize params'''
         self.lambda_p = 0.5
         self.lambda_f = 1.0
 
+        '''initialize image decomposition networks'''
+        self.imgDecomp = ImageDecomp(depth_v, alb_v, light_v, view_v)
 
-        '''initialize networks'''
-        self.netA = AlbedoNet_v1()
-        self.netD = DepthNet_v1()
-        self.netL = LightNet_v1()
-        self.netV = ViewNet_v1()
+        '''TODO: implement ImageDecomp with additional network versions.'''
+
         self.netC = ConfNet_v1()
         self.percep = PercepLoss()
 
         '''pipeline utils'''
-        self.ImgForm = ImageFormation(size=64)
+        self.imgForm = ImageFormation(size=64)
 
         
 
@@ -46,14 +45,14 @@ class PhotoGeoAE():
         implement pipeline here
         '''
 
-        albedo = self.netA(input)           # b 3 H W
-        depth = self.netD(input)            # b 1 H W
-        view = self.netV(input)             # b 6
-        light = self.netL(input)            # b 4
+        albedo = self.imgDecomp.get_depth_map(input)    # B x 3 x W x H
+        depth = self.imgDecomp.get_albedo(input)        # B x 1 x W x H 
+        view = self.imgDecomp.get_view(input)           # B x 6 x 1 x 1
+        light = self.imgDecomp.get_light(input)         # B x 4 x 1 x 1
+
         conf_percep, conf = self.netC(input)# b 1 H/4 W/4 .. b 1 H W 
 
         '''implement some pipeline'''
-
 
         recon_output = None
         flipped_recon_ouptut = None
