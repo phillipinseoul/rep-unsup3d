@@ -1,12 +1,14 @@
 from unsup3d.train import Trainer
 #from unsup3d.model import PercepLoss
 from unsup3d.dataloader import CelebA
+from unsup3d.renderer import *
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 import torchvision.transforms as transforms
 import torch.nn as nn
 import numpy as np
+
 
 
 class SimpleNN(nn.Module):
@@ -178,8 +180,124 @@ def depth_to_normal(self, depth_map):
     return normal_map.unsqueeze(0)
 
 
+def test_gen_grid_0513():
+    path1 = "./test1.jpg"   
+    path2 = "./test2.jpg"
+    imgs1 = get_torch_image(13, 64, 64, path1).cuda()
+    imgs2 = get_torch_image(13, 64, 64, path2).cpu()
+
+    grid1 = gen_grid(imgs1)
+    grid2 = gen_grid(imgs2)
+
+    print("grid 1 shape:", grid1.shape, "grid 1 device", grid1.device)
+    print("grid 2 shape:", grid2.shape, "grid 2 device", grid2.device)
+    print(grid2[0,:,0:10,0:10])
+
+
+def test_matmul_0513_1():
+    path1 = "./test1.jpg"   
+    path2 = "./test2.jpg"
+    imgs1 = get_torch_image(13, 64, 64, path1)
+    imgs2 = get_torch_image(13, 64, 64, path2)
+
+    if True:
+        # test with mixed batch
+        imgs1 = torch.cat([imgs1, imgs2], dim=0)
+        
+    K = torch.eye(3)
+
+    print("imgs1 shape: ", imgs1.shape)
+    print("K shape: ",K.shape)
+
+    try:
+        res1 = torch.matmul(K, imgs1)
+        print(res1.shape)
+    except RuntimeError as e:
+        print("trial 1", e)
+
+    try:
+        K_t = K.unsqueeze(0).repeat(13,1,1)
+        res2 = torch.matmul(K_t, imgs1)
+        print(res2.shape)
+    except RuntimeError as e:
+        print("trial 2", e)
+
+    try:
+        K_t = K.unsqueeze(0).repeat(13,1,1).unsqueeze(-1)
+        res3 = torch.matmul(K_t, imgs1)
+        print(res3.shape)
+    except RuntimeError as e:
+        print("trial 3", e)
+
+    try:        ######## -> selected ! only function that works porperly here!
+        imgs1_t = imgs1.reshape(imgs1.shape[0],imgs1.shape[1],-1)
+        res4 = torch.matmul(K, imgs1_t)
+        res4 = res4.reshape(imgs1.shape[0],imgs1.shape[1],imgs1.shape[2],imgs1.shape[3])
+        print(res4.shape)
+        diff = res4-imgs1
+        print("trial 4 diff mean: ", torch.mean(diff), "diff std: ", torch.std(diff))
+    except RuntimeError as e:
+        print("trial 4", e)
+
+    try:
+        imgs1_t = imgs1.reshape(imgs1.shape[0],imgs1.shape[1],-1).permute(1,0,2)
+        res4 = torch.matmul(K, imgs1_t).permute(1,0,2)
+        res4 = res4.reshape(imgs1.shape[0],imgs1.shape[1],imgs1.shape[2],imgs1.shape[3])
+        print(res4.shape)
+        diff = res4-imgs1
+        print("trial 5 diff mean: ", torch.mean(diff), "diff std: ", torch.std(diff))
+    except RuntimeError as e:
+        print("trial 5", e)
+
+
+def test_matmul_0513_2():       # to test (B x 3 x W x H) x (3 x 3)
+    path1 = "./test1.jpg"   
+    path2 = "./test2.jpg"
+    imgs1 = get_torch_image(13, 64, 64, path1)
+    imgs2 = get_torch_image(13, 64, 64, path2)
+
+    if True:
+        # test with mixed batch
+        imgs1 = torch.cat([imgs1, imgs2], dim=0)
+        
+    K = torch.eye(3)
+
+    print("imgs1 shape: ", imgs1.shape)
+    print("K shape: ",K.shape)
+
+    try:        ######## -> selected ! only function that works porperly here!
+        imgs1_t = imgs1.reshape(imgs1.shape[0],imgs1.shape[1],-1).permute(0,2,1)
+        res4 = torch.matmul(imgs1_t, K).permute(0,2,1)
+        res4 = res4.reshape(imgs1.shape[0],imgs1.shape[1],imgs1.shape[2],imgs1.shape[3])
+        print(res4.shape)
+        diff = res4-imgs1
+        print("trial 4 diff mean: ", torch.mean(diff), "diff std: ", torch.std(diff))
+    except RuntimeError as e:
+        print("trial 4", e)
+
+
+def test_safe_matmul_0513():
+    path1 = "./test1.jpg"   
+    path2 = "./test2.jpg"
+    imgs1 = get_torch_image(13, 64, 64, path1)
+    imgs2 = get_torch_image(13, 64, 64, path2)
+
+    if True:
+        # test with mixed batch
+        imgs1 = torch.cat([imgs1, imgs2], dim=0)
+        
+    K = torch.eye(3)
+
+    res1 = safe_matmul(K, imgs1)
+    diff = res1-imgs1
+    print("trial 1 diff mean: ", torch.mean(diff), "diff std: ", torch.std(diff))
+
+    res2 = safe_matmul(imgs1, K)
+    diff = res2-imgs1
+    print("trial 2 diff mean: ", torch.mean(diff), "diff std: ", torch.std(diff))
+
 if __name__ == '__main__':
-    test_depth_to_normal_v2()
+    test_batch_matmul_0513()
 
 
 

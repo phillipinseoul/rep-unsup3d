@@ -5,7 +5,7 @@ import pstats
 import torch
 import torch.optim as optims
 from torch.utils.data import DataLoader
-from torch.utils.tensorboard import SummaryWriter
+#from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 import os.path as path
 import os
