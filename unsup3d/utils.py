@@ -79,7 +79,17 @@ class ImageFormation():
         return shading_map
 
     def alb_to_canon(self, albedo, shading):
-        pass
+        '''
+        - input:
+            i) albedo: B x 3 x W x H
+            ii) shading_map: B x 1 x W x H
+        - output:
+            canon_view: B x 3 x W x H
+        '''
+        # calculate the canonical view
+        canon_view = albedo * shading_map
+
+        return canon_view
 
     
 
