@@ -22,7 +22,7 @@ class BFM_Metrics():
         temp_1 = torch.sum(del_uv ** 2) / (W * H)
         temp_2 = torch.sum(del_uv) / (W * H)
         side = torch.sqrt(temp_1 - (temp_2 ** 2))
-        return side                         # B x 1
+        return side                         
 
     def MAD_error(self):
         '''MAD (mean angle deviation) between normal maps'''
