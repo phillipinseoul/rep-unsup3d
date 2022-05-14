@@ -12,7 +12,7 @@ class CelebA(Dataset):
     def __init__(self, setting = "train", img_size = (64,64)):
         '''check setting first'''
         if setting not in setting_list:
-            print("CelebA, wron data setting, you should select one of 'train', 'test' or 'val'.")
+            print("CelebA, wrong data setting, you should select one of 'train', 'test' or 'val'.")
             print("what you selected : ", setting)
             assert(0)
         
