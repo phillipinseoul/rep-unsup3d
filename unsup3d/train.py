@@ -11,7 +11,7 @@ import os.path as path
 import os
 
 from unsup3d.model import PhotoGeoAE
-from unsup3d.dataloader import CelebA
+from unsup3d.dataloader import CelebA, BFM
 
 
 # initially, 
@@ -46,7 +46,11 @@ class Trainer():
         self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
 
         '''implement dataloader'''
-        self.datasets = CelebA()
+        if args.dataset == "celeba":
+            self.datasets = CelebA()
+        elif args.dataset == "bfm":
+            self.datasets = BFM()
+
         self.dataloader = DataLoader(
             self.datasets,
             batch_size= self.b_size,
@@ -92,7 +96,7 @@ class Trainer():
         '''train model (single epoch)'''
         epch_loss = 0
         cnt = 0
-        for i, inputs in tqdm(enumerate(self.dataloader,0)):
+        for i, inputs in tqdm(enumerate(self.dataloader, 0)):
             inputs = inputs.to(self.device)
             losses = self.model(inputs)
 
