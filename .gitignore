@@ -1,5 +1,6 @@
 __pycache__
 *.zip
 *.jpg
-experiments/
+experiments/logs/
 *.pt
+data/
