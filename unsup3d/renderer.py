@@ -6,17 +6,21 @@ from neural_renderer import Renderer
 BATCH_SIZE = 16
 EPS = 1e-21
 
+IS_DEBUG = True
+
 class RenderPipeline(nn.Module):
-    def __init__(self, device = torch.device("cpu"), args = None):
+    def __init__(self, device = torch.device("cuda"), b_size = BATCH_SIZE, args = None):
         '''
         this part should be received from argument "args"
         We need to update it! (05/13 inhee)
         '''
-        super(self, RenderPipeline).__init__()
+        super(RenderPipeline, self).__init__()
         W = 64
         H = 64
-        B = BATCH_SIZE
+        B = b_size
         theta_fov = 10  # 10 degree, not rad
+        self.W = W
+        self.H = H
         self.device = device
         self.min_depth = 0.9    # from Table.6 of paper
         self.max_depth = 1.1    # from Table.6 of paper
@@ -25,7 +29,7 @@ class RenderPipeline(nn.Module):
         center_depth = torch.tensor([[[[center_depth]]]], dtype = torch.float32) # 1 x 1 x 1 x 1
         self.center_depth = torch.cat([
             torch.zeros(1,2,1,1, dtype = torch.float32),
-            center_depth], dim = 1)                                              # 1 x 3 x 1 x 1
+            center_depth], dim = 1).to(self.device)            # 1 x 3 x 1 x 1
         
 
         self.render_min_depth = 0.1         # allow larger depth range on renderer, than clamp
@@ -37,17 +41,20 @@ class RenderPipeline(nn.Module):
         c_v = (H-1)/2
         f = (W-1)/(2*math.tan(deg2rad(theta_fov)/2))
 
-        self.K = torch.Tensor([[f, 0, c_u],
-                  [0, f, c_v],
-                  [0, 0, 1]], dtype = torch.float32).to(self.device)
-
+        self.K = torch.tensor([
+            [f, 0, c_u],
+            [0, f, c_v],
+            [0, 0, 1]], dtype = torch.float32)              
         self.K_inv = torch.linalg.inv(self.K)               # 3x3 matrix
+        self.K = self.K.unsqueeze(0).to(self.device)
+        self.K_inv = self.K_inv.unsqueeze(0).to(self.device)
 
 
         # define neural renderer
         # Here, we give camer information by K, I omitted camera relevant args (05/13)
         T = torch.zeros(1,3,dtype = torch.float32).to(self.device)  # zero translation for renderer
         R = torch.eye(3,dtype = torch.float32).to(self.device)      # zero rotation for renderer
+        R = R.unsqueeze(0)
 
         self.renderer = Renderer(
             image_size=W,                       # output image size. It can only handle square
@@ -89,7 +96,7 @@ class RenderPipeline(nn.Module):
         '''
         grid = gen_grid(canon_depth)      # B 2 W H
         grid_3d = torch.cat(
-            [grid, torch.zeros_like(canon_depth, dtype = torch.float32).to(canon_depth.device)], 
+            [grid, torch.ones_like(canon_depth, dtype = torch.float32).to(canon_depth.device)], 
             dim=1)                  # B 3 W H
         
         canon_pc = safe_matmul(self.K_inv, grid_3d) # B 3 W H
@@ -113,9 +120,9 @@ class RenderPipeline(nn.Module):
         (05/13 inhee)
         '''
         self.R = get_rot_mat(
-            alpha = rotates[:,0:1],
+            alpha = rotates[:,2:3],
             beta = rotates[:,0:1],
-            gamma = rotates[:,0:1]
+            gamma = rotates[:,1:2]
         )
         self.T = trans.unsqueeze(-1).unsqueeze(-1)  # B 3 1 1
 
@@ -170,7 +177,7 @@ class RenderPipeline(nn.Module):
         margin = (self.max_depth - self.min_depth)/2
         org_depth = org_depth.clamp(min = self.min_depth-margin, max = self.max_depth+margin)
         
-        return org_depth
+        return org_depth.unsqueeze(1)
 
 
     def get_warp_grid(self, org_depth):
@@ -192,9 +199,10 @@ class RenderPipeline(nn.Module):
         '''
         grid = gen_grid(org_depth)      # B 2 W H
         grid_3d = torch.cat(
-            [grid, torch.zeros_like(org_depth, dtype = torch.float32).to(org_depth.device)], 
+            [grid, torch.ones_like(org_depth, dtype = torch.float32).to(org_depth.device)], 
             dim=1)                      # B 3 W H
         org_pc = safe_matmul(self.K_inv, grid_3d)
+        org_pc = org_pc * org_depth
         
         canon_pc = org_pc - self.T                                  # B 3 W H
 
@@ -202,10 +210,19 @@ class RenderPipeline(nn.Module):
         c_canon_pc = canon_pc - self.center_depth
         canon_pc = safe_matmul(self.R.transpose(1,2), c_canon_pc)   # B 3 W H, inv rotation == transpose
         canon_pc = canon_pc + self.center_depth
+
+        canon_pc = safe_matmul(self.K, canon_pc)
         canon_pc = canon_pc / (canon_pc[:,2:3,:,:] + EPS)
 
-        warp_grid = canon_pc[:,0:2,:,:]                             # B 2 W H
+        
 
+        warp_grid = canon_pc[:,0:2,:,:]                             # B 2 W H
+        
+        # change it to have value range -1 ~ 1
+        # The grid would hold value 0~W-1, 0~H-1
+        normalize = torch.tensor([self.W-1, self.H-1], dtype = torch.float32).to(self.device)
+        normalize = normalize.view(1,2,1,1) / 2.0
+        warp_grid = warp_grid/normalize - 1.0
 
         return warp_grid
 
@@ -228,7 +245,7 @@ class RenderPipeline(nn.Module):
             input = canon_img,                          # B 3 W H
             grid = warp_grid.permute(0,2,3,1),          # B W H 2
             mode = 'bilinear',
-            padding = 'zeros'
+            padding_mode = 'zeros'
         )
         
 
@@ -248,9 +265,10 @@ class RenderPipeline(nn.Module):
         (05/14 inhee)
         '''
         rotates = views[:,0:3]            # B x 3, (-1.0  ~ 1.0)
-        rotates = rotates * 60.0        # B x 3, (-60.0 ~ 60.0)
+        #rotates = rotates * 60.0        # B x 3, (-60.0 ~ 60.0)
+        rotates = rotates * 180.0 / math.pi
         trans = views[:,3:6]                # B x 3, (-1.0  ~ 1.0)
-        trans = trans / 10.0                # B x 3, (-0.1  ~ 0.1)
+        #trans = trans / 10.0                # B x 3, (-0.1  ~ 0.1)
 
 
         canon_pc = self.canon_depth_to_3d(canon_depth)
@@ -311,7 +329,7 @@ def safe_matmul(first, second):
     Other input shapes would be asserted (05/13 inhee)
     '''
     # case handling. 
-    if len(first.shape)==2 and len(second.shape) == 4:
+    if len(first.shape) < 4 and len(second.shape) == 4:
         first_is_3x3 = True
 
         if second.shape[1] != 3:
@@ -319,7 +337,7 @@ def safe_matmul(first, second):
             print("first shape: ", first.shape)
             print("second shape: ", second.shape)
 
-    elif len(first.shape)==4 and len(second.shape) == 2:
+    elif len(first.shape)==4 and len(second.shape) < 4:
         first_is_3x3 = False
         
         if first.shape[1] != 3:
@@ -331,6 +349,7 @@ def safe_matmul(first, second):
         print("improper shape")
         print("first shape: ", first.shape)
         print("second shape: ", second.shape)
+        assert(0)
 
     # device different case
     if first.device != second.device:
@@ -367,7 +386,7 @@ def get_rot_mat(alpha, beta, gamma):
     ################################################# YOU NEED TO TEST IT WHETHER IT'S PROPER (05/13) #######
     '''
     # generate rotation matrix
-    device = a.device
+    device = alpha.device
     a = alpha/180 * torch.pi
     b = beta/180 * torch.pi
     g = gamma/180 * torch.pi
@@ -385,16 +404,16 @@ def get_rot_mat(alpha, beta, gamma):
         [
             torch.stack([c_a, -s_a, torch.zeros_like(c_a, dtype=torch.float32).to(device)], dim = 2), # B x 1 x 3
             torch.stack([s_a, c_a, torch.zeros_like(c_a, dtype=torch.float32).to(device)], dim = 2),  # B x 1 x 3
-            torch.cat([
-                torch.zeros_like(c_a),
-                torch.zeros_like(c_a),
-                torch.ones_like(c_a)
-            ], dtype = torch.float32).to(device)                                                      # B x 1 x 3  
+            torch.stack([
+                torch.zeros_like(c_a, dtype = torch.float32),
+                torch.zeros_like(c_a, dtype = torch.float32),
+                torch.ones_like(c_a, dtype = torch.float32)
+            ], dim = 2).to(device)                                                      # B x 1 x 3  
         ], dim = 1
     )                                                                                                 # B x 3 x 3
     ## <rot_b>
     ##
-    ##     1         1          0
+    ##     1         0          0
     ##     0     cos(beta) -sin(beta)
     ##     0     sin(beta)  cos(beta)
     ##
@@ -402,11 +421,11 @@ def get_rot_mat(alpha, beta, gamma):
     c_b = torch.cos(b)  # B x 1
     rot_b = torch.cat(
         [
-            torch.cat([
-                torch.zeros_like(c_b),
-                torch.zeros_like(c_b),
-                torch.ones_like(c_b)
-            ], dtype = torch.float32).to(device),                                                     # B x 1 x 3 
+            torch.stack([
+                torch.ones_like(c_b, dtype = torch.float32),
+                torch.zeros_like(c_b, dtype = torch.float32),
+                torch.zeros_like(c_b, dtype = torch.float32)
+            ], dim = 2).to(device),                                                     # B x 1 x 3 
             torch.stack([torch.zeros_like(c_b, dtype=torch.float32).to(device), c_b, -s_b], dim = 2), # B x 1 x 3
             torch.stack([torch.zeros_like(c_b, dtype=torch.float32).to(device), s_b, c_b], dim = 2)  # B x 1 x 3
         ], dim = 1
@@ -422,11 +441,11 @@ def get_rot_mat(alpha, beta, gamma):
     rot_g = torch.cat(
         [
             torch.stack([c_g, torch.zeros_like(c_a, dtype=torch.float32).to(device), s_g], dim = 2),  # B x 1 x 3
-            torch.cat([
-                torch.zeros_like(c_a),
-                torch.ones_like(c_a),
-                torch.zeros_like(c_a)
-            ], dtype = torch.float32).to(device),                                                     # B x 1 x 3 
+            torch.stack([
+                torch.zeros_like(c_a, dtype = torch.float32),
+                torch.ones_like(c_a, dtype = torch.float32),
+                torch.zeros_like(c_a, dtype = torch.float32)
+            ], dim = 2).to(device),                                                     # B x 1 x 3 
             torch.stack([-s_a, torch.zeros_like(c_a, dtype=torch.float32).to(device), c_g], dim = 2)  # B x 1 x 3
         ], dim = 1
     )  
@@ -486,4 +505,4 @@ def get_faces(B,W,H):
         dim = 0
     )   # 2(W-1)(H-1) x 3
 
-    return faces.unsqueeze(-1).repeat(B, 1, 1)      # B x 2(W-1)(H-1) x 3
+    return faces.unsqueeze(0).repeat(B, 1, 1)      # B x 2(W-1)(H-1) x 3
