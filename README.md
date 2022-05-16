@@ -2,6 +2,11 @@
 
 By Yuseung Lee & Inhee Lee
 
+#### 05/16 How to run
+```bash
+python run.py --configs configs/celeba_train_v0.yaml
+```
+
 #### Depth Map to Normal Map
 Initial test code at `unsup3d/test_repo/test_normal.py`
 ```bash

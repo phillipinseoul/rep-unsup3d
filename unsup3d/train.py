@@ -6,12 +6,13 @@ import torch
 import torch.optim as optims
 from torch.utils.data import DataLoader
 #from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 from tqdm import tqdm
 import os.path as path
 import os
 
 from unsup3d.model import PhotoGeoAE
-from unsup3d.dataloader import CelebA
+from unsup3d.dataloader import CelebA, BFM
 
 
 # initially, 
@@ -23,19 +24,19 @@ chk_PATH = './chk.pt'   # need to change later
 is_debug = False
 
 class Trainer():
-    def __init__(self, args, model = None): # model is for debug(05/09)
+    def __init__(self, configs, model = None): # model is for debug(05/09)
         '''initialize params (to be implemented)'''
-        self.max_epoch = 200
-        self.img_size = 64
-        self.b_size = 64
-        self.epoch = 0
+        self.max_epoch = configs['num_epochs']
+        self.img_size = configs['img_size']
+        self.batch_size = configs['batch_size']
+        self.learning_rate = configs['learning_rate']
 
+        self.epoch = 0
         self.best_loss = 1e10
 
-
         '''path relevant'''
-        self.exp_name = '0508_test'
-        self.exp_path = path.join('./experiments', self.exp_name)
+        self.exp_name = configs['exp_name']
+        self.exp_path = path.join(configs['exp_path'], self.exp_name)
         os.makedirs(self.exp_path, exist_ok=True)
         self.save_path = path.join(self.exp_path, 'models')
         os.makedirs(self.save_path, exist_ok=True)
@@ -43,13 +44,18 @@ class Trainer():
         self.load_path = None
 
         '''logger setting'''
-        self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
+        # self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
+        self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
 
         '''implement dataloader'''
-        self.datasets = CelebA()
+        if configs['dataset'] == "celeba":
+            self.datasets = CelebA()
+        elif configs['dataset'] == "bfm":
+            self.datasets = BFM()
+
         self.dataloader = DataLoader(
             self.datasets,
-            batch_size= self.b_size,
+            batch_size= self.batch_size,
             shuffle=True,
             num_workers=4
         )
@@ -63,10 +69,14 @@ class Trainer():
         else:
             self.model = PhotoGeoAE().to(self.device)
         
-
         self.optimizer = optims.Adam(
             params = self.model.parameters(),
-            lr = LR
+            lr = self.learning_rate
+        )
+
+        self.scheduler = optims.lr_scheduler.LambdaLR(
+            optimizer = self.optimizer,
+            lr_lambda = lambda epoch: 0.95 ** epoch
         )
 
         '''load_model and optimizer state'''
@@ -80,35 +90,34 @@ class Trainer():
             epch_loss = self._train()
             self.epoch = epch
 
-
             if epch_loss < self.best_loss:
                 self.save_model(epch_loss)
                 self.best_loss = epch_loss
-            if self.epoch%20 == 0:
-                self.save_model(epch_loss)
 
+            if self.epoch % 20 == 0:
+                self.save_model(epch_loss)
 
     def _train(self):
         '''train model (single epoch)'''
         epch_loss = 0
         cnt = 0
-        for i, inputs in tqdm(enumerate(self.dataloader,0)):
+        for i, inputs in tqdm(enumerate(self.dataloader, 0)):
             inputs = inputs.to(self.device)
             losses = self.model(inputs)
-
             loss = torch.mean(losses)
             loss.backward()
-        
             self.optimizer.step()
 
             # calculate epch_loss
             epch_loss += loss.detach().cpu()
-            cnt+=1
+            cnt += 1
 
             if i%30 == 0:
-                print(i,"step, loss : ", loss.detach().cpu().item())
-
-        return epch_loss/cnt
+                print(i, "step, loss : ", loss.detach().cpu().item())
+        
+        self.scheduler.step()
+        return epch_loss
+        # return epch_loss/cnt
 
 
     def load_model(self, PATH):

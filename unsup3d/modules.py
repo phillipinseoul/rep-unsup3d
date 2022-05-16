@@ -2,7 +2,7 @@
 Define all neural networks used in photo-geometric pipeline
 Any learnable parameters shouldn't be defined out of this file
 '''
-
+import torch
 import torch.nn as nn
 
 # network architecture for viewpoint, lighting

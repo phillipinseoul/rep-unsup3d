@@ -9,17 +9,31 @@ import tensorboardX
 from unsup3d.networks import ImageDecomp, ConfNet_v1
 from unsup3d.utils import ImageFormation
 from unsup3d.renderer import RenderPipeline
+from unsup3d.metrics import BFM_Metrics
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class PhotoGeoAE():
-    def __init__(self, depth_v='v0', alb_v='v0', light_v='v0', view_v='v0'):
+    def __init__(self, configs):
         '''initialize params'''
-        self.lambda_p = 0.5
-        self.lambda_f = 1.0
+        # self.lambda_p = 0.5
+        # self.lambda_f = 1.0
+
+        '''TODO: set configs'''
+
+        self.lambda_p = configs['lambda_p']
+        self.lambda_f = configs['lambda_f']
+
+        self.depth_v = configs['depth_v']
+        self.alb_v = configs['alb_v']
+        self.light_v = configs['light_v']
+        self.view_v = configs['view_v']
+        self.use_gt_depth = configs['use_gt_depth']
+        
+        '''TODO: set configs'''
 
         '''initialize image decomposition networks'''
-        self.imgDecomp = ImageDecomp(depth_v, alb_v, light_v, view_v)
+        self.imgDecomp = ImageDecomp(self.depth_v, self.alb_v, self.light_v, self.view_v)
 
         '''TODO: implement ImageDecomp with additional network versions.'''
 
@@ -48,6 +62,10 @@ class PhotoGeoAE():
         - input: (Bx3xHxW), preprocessed on dataloader as H=W=64
         implement pipeline here
         '''
+
+        '''for BFM datasets, separate gt_depth'''
+        if self.use_gt_depth:
+            input, gt_depth = input
 
         albedo = self.imgDecomp.get_depth_map(input)    # B x 3 x W x H
         depth = self.imgDecomp.get_albedo(input)        # B x 1 x W x H 
@@ -96,6 +114,12 @@ class PhotoGeoAE():
         flip_loss = f_photoloss + self.lambda_p * f_percep_loss           # (b_size)
         
         tot_loss = org_loss + self.lambda_f * flip_loss
+
+        '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
+        if use_gt_depth:
+            bfm_metrics = BFM_Metrics(org_depth, gt_depth)
+            self.side_error = bfm_metrics.SIDE_error()
+            self.mad_error = bfm_metrics.MAD_error()
 
         return tot_loss
 

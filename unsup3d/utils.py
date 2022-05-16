@@ -41,7 +41,7 @@ class ImageFormation():
         d = torch.cross(v2 - c, v1 - c, dim = 1)
         normal_map = d / torch.sqrt(torch.sum(d ** 2, dim = 1, keepdim=True))
 
-        return normal_map
+        return normal_map   
 
     def normal_to_shading(self, normal_map, lighting):
         '''
