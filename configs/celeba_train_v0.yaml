@@ -1,0 +1,24 @@
+# trainer
+dataset: celeba
+num_epochs: 200
+batch_size: 32
+run_train: true
+exp_name: celeba_train_v0
+exp_path: experiments/celeba_train
+chk_path: models/celeba_train
+
+img_size: 64
+
+# light configs
+lambda_p: 0.5
+lambda_f: 1.0
+
+# network versions
+depth_v: depth_v0
+alb_v: alb_v0
+light_v: light_v0
+view_v: view_v0
+
+use_gt_depth: true
+
+

@@ -23,8 +23,10 @@ class PhotoGeoAE():
 
         self.lambda_p = configs['lambda_p']
         self.lambda_f = configs['lambda_f']
+
         self.depth_v = configs['depth_v']
-        self.alb_v = configs['light_v']
+        self.alb_v = configs['alb_v']
+        self.light_v = configs['light_v']
         self.view_v = configs['view_v']
         self.use_gt_depth = configs['use_gt_depth']
         
