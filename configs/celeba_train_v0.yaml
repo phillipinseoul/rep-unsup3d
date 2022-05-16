@@ -2,6 +2,7 @@
 dataset: celeba
 num_epochs: 200
 batch_size: 32
+learning_rate: 0.0001
 run_train: true
 exp_name: celeba_train_v0
 exp_path: experiments/celeba_train
