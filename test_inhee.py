@@ -2,12 +2,16 @@ from unsup3d.train import Trainer
 #from unsup3d.model import PercepLoss
 from unsup3d.dataloader import CelebA
 from unsup3d.renderer import *
+from unsup3d.utils import ImageFormation
 import torch
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import os
 import torchvision.transforms as transforms
 import torch.nn as nn
 import numpy as np
+from PIL import Image 
+import PIL 
 
 
 
@@ -296,8 +300,209 @@ def test_safe_matmul_0513():
     diff = res2-imgs1
     print("trial 2 diff mean: ", torch.mean(diff), "diff std: ", torch.std(diff))
 
-if __name__ == '__main__':
-    test_batch_matmul_0513()
 
+def test_0514(test_util = True):
+    os.makedirs("./debug",exist_ok=True)
+    DATA_PATH = "./human_face"
+    face_list = [
+        '001_face',
+        '002_face',
+        '003_face',
+        '004_face',
+        '005_face'
+    ]
+    b_size = 5
+    interm_values = []
+    for f_name in face_list:
+        dir_name = os.path.join(DATA_PATH, f_name)
+        res = test_data_loader(dir_name)
+        interm_values.append(res)
+
+        if False:
+            # check meaning of "ori" of data
+            imgdir_name = os.path.join("./debug", f_name)
+            os.makedirs(imgdir_name, exist_ok=True)
+            img_ori = tensor_to_image(res['canon_depth_ori'])
+            img_raw = tensor_to_image(res['canon_depth_raw'])
+            img_alb = tensor_to_image(res['canon_albedo'])
+            img_can = tensor_to_image((res['canon_img']+1)/2)
+            img_ori.save(os.path.join(imgdir_name, "depth_ori.png"))
+            img_raw.save(os.path.join(imgdir_name, "depth_raw.png"))
+            img_alb.save(os.path.join(imgdir_name, "canon_albedo.png"))
+            img_can.save(os.path.join(imgdir_name, "canon_img.png"))
+            assert(0)
+    
+    # make_batch with given data
+    b_depth = res['canon_depth_ori'].unsqueeze(0)     # B 1 W H
+    b_albedo = res['canon_albedo']                    # B 3 W H
+    b_view = res['view']
+    b_canon_img = res['canon_img']
+
+    # to check utils part
+    b_light = res['light']
+    b_shading = res['canon_shading']
+    b_normal = res['canon_normal']
+
+    #iteratively build batch
+    for i in range(4):
+        res = interm_values[i]
+        b_depth = torch.cat([b_depth, res['canon_depth_ori'].unsqueeze(0)], dim=0)
+        b_albedo = torch.cat([b_albedo, res['canon_albedo'] ], dim=0)
+        b_view = torch.cat([b_view, res['view'] ], dim=0)
+        b_canon_img = torch.cat([b_canon_img, res['canon_img'] ], dim=0)
+
+        b_light = torch.cat([b_light, res['light'] ], dim=0)
+        b_shading = torch.cat([b_shading, res['canon_shading'] ], dim=0)
+        b_normal = torch.cat([b_normal, res['canon_normal'] ], dim=0)
+
+    b_light = b_light.unsqueeze(-1).unsqueeze(-1)
+
+
+    if test_util:
+        test_utils(b_depth, b_light, b_albedo, b_shading, b_normal, b_canon_img)
+
+    else:
+        test_render(b_depth, b_canon_img, b_view)
+
+
+def test_utils(depth, light, albedo, shading, normal, canon):
+    ImgForm = ImageFormation()
+    my_normal = ImgForm.depth_to_normal(depth)
+    my_shading = ImgForm.normal_to_shading(my_normal, light)
+    my_canon = ImgForm.alb_to_canon(albedo, my_shading)
+
+    # compare normal
+    print("my normal: ", my_normal.shape, ", min: ", my_normal.min(),", max: ", my_normal.max())
+    print("org normal: ", normal.shape, ", min: ", normal.min(),", max: ", normal.max())
+    compare_plot('./debug/normal.png',my_normal, normal.permute(0,3,1,2))
+
+    # compare shading
+    print("my shading: ", my_shading.shape, ", min: ", my_shading.min(),", max: ", my_shading.max())
+    print("org shading: ", shading.shape, ", min: ", shading.min(),", max: ", shading.max())
+    compare_plot('./debug/shadings.png',my_shading, shading)
+
+    # compare canon
+    print("my canon: ", my_canon.shape, ", min: ", my_canon.min(),", max: ", my_canon.max())
+    print("org canon: ", canon.shape, ", min: ", canon.min(),", max: ", canon.max())
+    compare_plot('./debug/canon.png',my_canon, canon, albedo)
+
+    
+
+
+def test_render(depth, img, view):
+    RDR = RenderPipeline(b_size = depth.shape[0])
+    org_img, org_depth = RDR(
+        canon_depth = depth.cuda(),
+        canon_img = img.cuda(),
+        views = view.cuda()
+    )
+    print("org image: ", org_img.shape, ", min: ", org_img.min(),", max: ", org_img.max())
+    print("org depth: ", org_depth.shape, ", min: ", org_depth.min(),", max: ", org_depth.max())
+    compare_plot(
+        './debug/renderer.png',
+        org_img.detach().cpu(), 
+        org_depth.detach().cpu(), 
+        title1='recon_img', 
+        title2='depth'
+    )
+    assert(0)
+
+
+
+
+def compare_plot(fname, imgs1, imgs2, imgs3=None, title1='mine', title2='authors', title3='albedo'):
+    '''
+    plot images, in single PNG file.
+    Row : batch, col : img variation
+
+    imgs1 : mine
+    imgs2 : original (author's)
+    '''
+    B = imgs1.shape[0]
+
+    imgs1 = to_zeroone(imgs1)
+    imgs2 = to_zeroone(imgs2)
+
+    if imgs3 is not None:
+        imgs3 = to_zeroone(imgs3)
+
+    if imgs3 is None:
+        fig, axs = plt.subplots(2,B)
+    else:
+        fig, axs = plt.subplots(3,B)
+    for i in range(B):
+        img1 = imgs1[i].permute(1,2,0)
+        img2 = imgs2[i].permute(1,2,0)
+
+        axs[0, i].imshow(img1)
+        axs[0, i].set_title(title1)
+        axs[1, i].imshow(img2)
+        axs[1, i].set_title(title2)
+
+        if imgs3 is not None:
+            img3 = imgs3[i].permute(1,2,0)
+            axs[2, i].imshow(img3)
+            axs[2, i].set_title(title3)
+
+    fig.savefig(fname)
+
+
+
+def to_zeroone(tensor):
+    min = tensor.min()
+    max = tensor.max()
+    return (tensor - min)/(max-min+EPS)
+
+
+
+
+
+def test_data_loader(path):
+    '''
+    canon_albedo        shape:  torch.Size([1, 3, 64, 64])  -> (-1 ~ 1)
+    canon_depth_ori     shape:  torch.Size([1, 64, 64])     -> clamped data (0.9~1.1)
+    canon_depth_raw     shape:  torch.Size([1, 64, 64])     -> useless (-1~10 values)
+    light               shape:  torch.Size([1, 4])          
+    view                shape:  torch.Size([1, 6])
+    canon_img           shape:  torch.Size([1, 3, 64, 64])  -> (-1 ~ 1)
+    canon_shading       shape:  torch.Size([1, 1, 64, 64])
+    canon_normal        shape:  torch.Size([1, 64, 64, 3])
+
+    It seems like is saved the "raw output" of the network.
+    I need to modify it to use it.
+    '''
+
+    interm_values = {
+        'canon_albedo':torch.load(os.path.join(path, 'canon_albedo_ori.pt')),
+        'canon_depth_ori':torch.load(os.path.join(path, 'canon_depth_ori.pt')),
+        'canon_depth_raw':torch.load(os.path.join(path, 'canon_depth_raw.pt')),
+        'light':torch.load(os.path.join(path, 'canon_light.pt')),
+        'view':torch.load(os.path.join(path, 'view.pt')),
+        'canon_img':torch.load(os.path.join(path, 'canon_im_ori.pt')),
+        'canon_shading':torch.load(os.path.join(path, 'canon_diffuse_shading_ori.pt')),
+        'canon_normal':torch.load(os.path.join(path, 'canon_normal_ori.pt')),
+    }
+
+    if False:
+        # print tensor size
+        for key in list(interm_values.keys()):
+            print(key, " shape: ", interm_values[key].shape)
+    
+    return interm_values
+
+
+
+def tensor_to_image(tensor):
+    if tensor.shape[1] == 3:
+        tensor = tensor.permute(0,2,3,1)
+    tensor_np = (tensor.squeeze()*255).to(dtype=torch.uint8).numpy()
+    img = Image.fromarray(tensor_np)
+    return img
+
+
+
+if __name__ == '__main__':
+    #test_0514(test_util=True)
+    test_0514(test_util=False)
 
 

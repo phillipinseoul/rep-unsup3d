@@ -1,7 +1,8 @@
 '''
 Define each network for the Photo-geometric Autoencoding pipeline.
 '''
-from .modules import Encoder, AutoEncoder, Conf_Conv
+from unsup3d.modules import Encoder, AutoEncoder, Conf_Conv
+
 
 # Image decompostion pipline
 class ImageDecomp():
