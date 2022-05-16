@@ -3,7 +3,7 @@ Define SIDE, MAD metrics for evaluating the 3D reconstruction accuracy.
 (Dataset: BFM synface)
 '''
 import torch
-from utils import ImageFormation
+from .utils import ImageFormation
 
 class BFM_Metrics():
     def __init__(self, depth_ac, depth_gt):

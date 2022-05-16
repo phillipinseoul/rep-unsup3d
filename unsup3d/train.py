@@ -6,6 +6,7 @@ import torch
 import torch.optim as optims
 from torch.utils.data import DataLoader
 #from torch.utils.tensorboard import SummaryWriter
+from tensorboardX import SummaryWriter
 from tqdm import tqdm
 import os.path as path
 import os
@@ -23,19 +24,18 @@ chk_PATH = './chk.pt'   # need to change later
 is_debug = False
 
 class Trainer():
-    def __init__(self, args, model = None): # model is for debug(05/09)
+    def __init__(self, configs, model = None): # model is for debug(05/09)
         '''initialize params (to be implemented)'''
-        self.max_epoch = 200
-        self.img_size = 64
-        self.b_size = 64
-        self.epoch = 0
+        self.max_epoch = configs['num_epochs']
+        self.img_size = configs['img_size']
+        self.b_size = configs['batch_size']
 
+        self.epoch = 0
         self.best_loss = 1e10
 
-
         '''path relevant'''
-        self.exp_name = '0508_test'
-        self.exp_path = path.join('./experiments', self.exp_name)
+        self.exp_name = configs['exp_name']
+        self.exp_path = path.join(configs['exp_path'], self.exp_name)
         os.makedirs(self.exp_path, exist_ok=True)
         self.save_path = path.join(self.exp_path, 'models')
         os.makedirs(self.save_path, exist_ok=True)
@@ -43,12 +43,13 @@ class Trainer():
         self.load_path = None
 
         '''logger setting'''
-        self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
+        # self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
+        self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
 
         '''implement dataloader'''
-        if args.dataset == "celeba":
+        if configs['dataset'] == "celeba":
             self.datasets = CelebA()
-        elif args.dataset == "bfm":
+        elif configs['dataset'] == "bfm":
             self.datasets = BFM()
 
         self.dataloader = DataLoader(

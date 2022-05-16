@@ -10,7 +10,7 @@ import os.path as path
 MAX_PIX = 255
 setting_list = ['train','val','test']
 CelebA_PATH = '/root/unsup3d-rep/data/celeba'
-BFM_PATH = '/root/unsup3d-rep/data/bfm'
+BFM_PATH = '/root/unsup3d-rep/data/synface'
 
 class CelebA(Dataset):
     def __init__(self, setting = "train", img_size = (64,64)):
