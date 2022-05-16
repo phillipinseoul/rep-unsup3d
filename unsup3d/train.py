@@ -28,7 +28,8 @@ class Trainer():
         '''initialize params (to be implemented)'''
         self.max_epoch = configs['num_epochs']
         self.img_size = configs['img_size']
-        self.b_size = configs['batch_size']
+        self.batch_size = configs['batch_size']
+        self.learning_rate = configs['learning_rate']
 
         self.epoch = 0
         self.best_loss = 1e10
@@ -54,7 +55,7 @@ class Trainer():
 
         self.dataloader = DataLoader(
             self.datasets,
-            batch_size= self.b_size,
+            batch_size= self.batch_size,
             shuffle=True,
             num_workers=4
         )
@@ -68,10 +69,14 @@ class Trainer():
         else:
             self.model = PhotoGeoAE().to(self.device)
         
-
         self.optimizer = optims.Adam(
             params = self.model.parameters(),
-            lr = LR
+            lr = self.learning_rate
+        )
+
+        self.scheduler = optims.lr_scheduler.LambdaLR(
+            optimizer = self.optimizer,
+            lr_lambda = lambda epoch: 0.95 ** epoch
         )
 
         '''load_model and optimizer state'''
@@ -85,13 +90,12 @@ class Trainer():
             epch_loss = self._train()
             self.epoch = epch
 
-
             if epch_loss < self.best_loss:
                 self.save_model(epch_loss)
                 self.best_loss = epch_loss
-            if self.epoch%20 == 0:
-                self.save_model(epch_loss)
 
+            if self.epoch % 20 == 0:
+                self.save_model(epch_loss)
 
     def _train(self):
         '''train model (single epoch)'''
@@ -100,20 +104,20 @@ class Trainer():
         for i, inputs in tqdm(enumerate(self.dataloader, 0)):
             inputs = inputs.to(self.device)
             losses = self.model(inputs)
-
             loss = torch.mean(losses)
             loss.backward()
-        
             self.optimizer.step()
 
             # calculate epch_loss
             epch_loss += loss.detach().cpu()
-            cnt+=1
+            cnt += 1
 
             if i%30 == 0:
-                print(i,"step, loss : ", loss.detach().cpu().item())
-
-        return epch_loss/cnt
+                print(i, "step, loss : ", loss.detach().cpu().item())
+        
+        self.scheduler.step()
+        return epch_loss
+        # return epch_loss/cnt
 
 
     def load_model(self, PATH):
