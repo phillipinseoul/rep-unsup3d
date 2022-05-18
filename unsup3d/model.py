@@ -6,7 +6,7 @@ import torchvision.models as pre_model
 import torchvision.transforms as transforms
 import tensorboardX
 
-from unsup3d.networks import ImageDecomp, ConfNet_v1
+from unsup3d.networks import ImageDecomp
 from unsup3d.utils import ImageFormation
 from unsup3d.renderer import RenderPipeline
 from unsup3d.metrics import BFM_Metrics
@@ -17,28 +17,22 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 class PhotoGeoAE():
     def __init__(self, configs):
         '''initialize params'''
-        # self.lambda_p = 0.5
-        # self.lambda_f = 1.0
 
         '''TODO: set configs'''
-
         self.lambda_p = configs['lambda_p']
         self.lambda_f = configs['lambda_f']
-
         self.depth_v = configs['depth_v']
         self.alb_v = configs['alb_v']
         self.light_v = configs['light_v']
         self.view_v = configs['view_v']
         self.use_gt_depth = configs['use_gt_depth']
-        
-        '''TODO: set configs'''
 
         '''initialize image decomposition networks'''
-        self.imgDecomp = ImageDecomp(self.depth_v, self.alb_v, self.light_v, self.view_v)
+        self.imgDecomp = ImageDecomp(self.depth_v, 
+                                     self.alb_v, 
+                                     self.light_v, 
+                                     self.view_v)
 
-        '''TODO: implement ImageDecomp with additional network versions.'''
-
-        self.netC = ConfNet_v1()
         self.percep = PercepLoss()
 
         '''pipeline utils'''
@@ -47,12 +41,12 @@ class PhotoGeoAE():
         
 
     def get_photo_loss(self, img1, img2, conf):
-        L1_loss = torch.abs(img1-img2)
-        losses = torch.log(torch.sqrt(2*torch.pi*conf**2)) \
-            * torch.exp(-torch.sqrt(2)*L1_loss/conf)
+        L1_loss = torch.abs(img1 - img2)
+        losses = torch.log(torch.sqrt(2 * torch.pi * conf ** 2)) \
+            * torch.exp(-torch.sqrt(2) * L1_loss / conf)
 
-        num_cases = img1.shape[1]*img1.shape[2]*img1.shape[3]
-        loss = -torch.sum(losses, dim=(1,2,3)) / num_cases
+        num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
+        loss = -torch.sum(losses, dim=(1, 2, 3)) / num_cases
 
         return loss
 
@@ -68,12 +62,13 @@ class PhotoGeoAE():
         if self.use_gt_depth:
             input, gt_depth = input
 
-        depth = self.imgDecomp.get_depth_map(input)    # B x 3 x W x H
-        albedo = self.imgDecomp.get_albedo(input)        # B x 1 x W x H 
+        '''image decomposition'''
+        depth = self.imgDecomp.get_depth_map(input)     # B x 3 x W x H
+        albedo = self.imgDecomp.get_albedo(input)       # B x 1 x W x H 
         view = self.imgDecomp.get_view(input)           # B x 6 x 1 x 1
         light = self.imgDecomp.get_light(input)         # B x 4 x 1 x 1
 
-        raw_conf_percep, raw_conf = self.netC(input)    # B 2 W/4 H/4 ,, B 2 W H 
+        raw_conf_percep, raw_conf = self.imgDecomp.get_confidence(input)    # B 2 W/4 H/4 ,, B 2 W H 
 
         conf_percep = raw_conf_percep[:,0:1,:,:]        # B x 1 x W/4 x H/4
         conf = raw_conf[:,0:1,:,:]                      # B x 1 x W x H
@@ -173,12 +168,12 @@ class PercepLoss(nn.Module):
         n_feat = feat1.shape[1]
         print("Feature dim:", n_feat)
 
-        feat_L1 = torch.abs(feat1-feat2)
-        loss = torch.log(torch.sqrt(2*torch.pi*conf**2)) \
+        feat_L1 = torch.abs(feat1 - feat2)
+        loss = torch.log(torch.sqrt(2 * torch.pi * conf ** 2)) \
             * torch.exp(-feat_L1**2/(2*conf**2))
         
-        num_cases = feat1.shape[2]*feat1.shape[3]*n_feat
-        tot_loss = -torch.sum(loss, dim=(1,2,3)) / num_cases
+        num_cases = feat1.shape[2] * feat1.shape[3] * n_feat
+        tot_loss = -torch.sum(loss, dim=(1, 2, 3)) / num_cases
 
         return tot_loss
         
