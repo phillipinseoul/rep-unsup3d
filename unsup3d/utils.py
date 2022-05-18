@@ -91,9 +91,29 @@ class ImageFormation():
 
         return canon_view
 
-    
 
-    
+def get_mask(depth):
+    '''
+    - depth: B x 1 x W x H
+    '''
+    ones = torch.ones_like(depth, dtype=torch.float32)
+    mask = depth > torch.min(depth)
+    mask_init = mask * ones
+
+    '''erode the mask'''
+    mask_avg = torch.nn.functional.avg_pool2d(
+        mask_init, kernel_size=3, stride=1, padding=1
+    )
+    mask_avg = mask_avg * mask_init
+    mask_erode = (mask_avg > 0.8) * ones
+
+    return mask_erode
+
+
+
+
+
+
 
 
 
