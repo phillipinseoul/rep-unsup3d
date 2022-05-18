@@ -67,8 +67,8 @@ class PhotoGeoAE():
         if self.use_gt_depth:
             input, gt_depth = input
 
-        albedo = self.imgDecomp.get_depth_map(input)    # B x 3 x W x H
-        depth = self.imgDecomp.get_albedo(input)        # B x 1 x W x H 
+        depth = self.imgDecomp.get_depth_map(input)    # B x 3 x W x H
+        albedo = self.imgDecomp.get_albedo(input)        # B x 1 x W x H 
         view = self.imgDecomp.get_view(input)           # B x 6 x 1 x 1
         light = self.imgDecomp.get_light(input)         # B x 4 x 1 x 1
 
