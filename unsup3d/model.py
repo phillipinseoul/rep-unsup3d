@@ -10,6 +10,7 @@ from unsup3d.networks import ImageDecomp, ConfNet_v1
 from unsup3d.utils import ImageFormation
 from unsup3d.renderer import RenderPipeline
 from unsup3d.metrics import BFM_Metrics
+from unsup3d.utils import get_mask
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -117,7 +118,12 @@ class PhotoGeoAE():
 
         '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
         if use_gt_depth:
-            bfm_metrics = BFM_Metrics(org_depth, gt_depth)
+            '''get mask for each BFM image'''
+            org_depth_masked = get_mask(org_depth)
+            gt_depth_masked = get_mask(gt_depth)
+
+            '''compute BFM metrics'''
+            bfm_metrics = BFM_Metrics(org_depth_masked, gt_depth_masked)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 

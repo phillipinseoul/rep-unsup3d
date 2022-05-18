@@ -1,7 +1,7 @@
 from unsup3d.train import Trainer
 from unsup3d.dataloader import CelebA
 from unsup3d.renderer import *
-from unsup3d.utils import ImageFormation
+from unsup3d.utils import ImageFormation, get_mask
 from unsup3d.model import PhotoGeoAE, PercepLoss
 from unsup3d.renderer import RenderPipeline
 from unsup3d.modules import AutoEncoder, Encoder
@@ -17,6 +17,36 @@ from PIL import Image
 import PIL
 import yaml
 from tensorboardX import SummaryWriter
+
+def test_0517():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    writer = SummaryWriter('test_results/logs')
+
+    # load a single input image
+    celeba_path = 'data/celeba_ex/001_face'
+    input = img_to_input(os.path.join(celeba_path, 'input_image.png'))  # B x 3 x W x H
+
+    input_x = input.squeeze(0)
+    writer.add_image('input/input_image', input_x)
+    input = input.to(device)
+
+    simpleAE = SimpleAE(device)
+
+    num_epochs = 200
+    for i in range(num_epochs):
+        input = input.detach().cpu()
+        recon_img, recon_depth = simpleAE(input)
+
+        input = input.to(device)
+        loss = get_photo_loss(recon_img, input)
+        simpleAE.optimizer.zero_grad()
+        loss.backward()
+        simpleAE.optimizer.step()
+
+        recon_img_x = recon_img.squeeze(0)
+        writer.add_image('recon/recon_image', recon_img_x, i)
+        print(f"iter {i}: loss={loss.item()}")
+        writer.add_scalar('loss/photo_loss', loss.item(), i)
 
 def img_to_input(img_path, image_size=(64, 64)):
     transform = transforms.Compose([
@@ -77,36 +107,32 @@ class SimpleAE(nn.Module):
 def get_photo_loss(img1, img2):
     L1_loss = torch.abs(img1 - img2)
     return torch.sum(L1_loss)
+
+
+def test_0518():
+    transform = transforms.Compose([
+        transforms.Resize((64, 64)),
+        transforms.ToTensor()
+    ])
+
+    image = Image.open('data/synface/test/image/000008_image_1_1.png').convert('RGB')
+    depth = Image.open('data/synface/test/depth/000008_depth_1_1.png').convert('L')
+    image = transform(image)
+    depth = transform(depth)
+
+    mask = get_mask(depth)
+    masked_image = mask * image
+
+    toImage = transforms.ToPILImage()
+    mask_img = toImage(masked_image).convert('RGB')
+    plt.imshow(mask_img)
+    plt.title('masked')
+    plt.savefig('masked_erode.png')
     
 if __name__ == '__main__':
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    writer = SummaryWriter('test_results/logs')
+    # test_0517()
+    test_0518()
 
-    # load a single input image
-    celeba_path = 'data/celeba_ex/001_face'
-    input = img_to_input(os.path.join(celeba_path, 'input_image.png'))  # B x 3 x W x H
-
-    input_x = input.squeeze(0)
-    writer.add_image('input/input_image', input_x)
-    input = input.to(device)
-
-    simpleAE = SimpleAE(device)
-
-    num_epochs = 200
-    for i in range(num_epochs):
-        input = input.detach().cpu()
-        recon_img, recon_depth = simpleAE(input)
-
-        input = input.to(device)
-        loss = get_photo_loss(recon_img, input)
-        simpleAE.optimizer.zero_grad()
-        loss.backward()
-        simpleAE.optimizer.step()
-
-        recon_img_x = recon_img.squeeze(0)
-        writer.add_image('recon/recon_image', recon_img_x, i)
-        print(f"iter {i}: loss={loss.item()}")
-        writer.add_scalar('loss/photo_loss', loss.item(), i)
 
 
 '''
