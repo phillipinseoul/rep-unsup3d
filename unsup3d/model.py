@@ -28,6 +28,7 @@ class PhotoGeoAE():
         self.light_v = configs['light_v']
         self.view_v = configs['view_v']
         self.use_gt_depth = configs['use_gt_depth']
+        self.use_conf = configs['use_conf']
         
         if configs['write_logs']:
             self.logger = SummaryWriter(join(configs['exp_path'], 'logs', datetime.now().strftime("%H:%M:%S")))
@@ -36,7 +37,8 @@ class PhotoGeoAE():
         self.imgDecomp = ImageDecomp(self.depth_v, 
                                      self.alb_v, 
                                      self.light_v, 
-                                     self.view_v)
+                                     self.view_v,
+                                     self.use_conf)
 
         self.percep = PercepLoss()
 

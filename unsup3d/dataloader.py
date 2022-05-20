@@ -10,7 +10,8 @@ import os.path as path
 MAX_PIX = 255
 setting_list = ['train','val','test']
 CelebA_PATH = '/root/unsup3d-rep/data/celeba'
-BFM_PATH = '/root/unsup3d-rep/data/synface'
+# BFM_PATH = '/root/unsup3d-rep/data/synface'
+BFM_PATH = 'data/synface'
 
 class CelebA(Dataset):
     def __init__(self, setting = "train", img_size = (64,64)):
@@ -56,8 +57,10 @@ class BFM(Dataset):
         self.gt_path = path.join(self.path, 'depth')        # path for ground truth depth maps
         self.img_size = img_size
 
-        img_list = [name for name in os.listdir(self.img_path) if path.isfile(path.join(self.img_path, name))].sort()
-        gt_list = [name for name in os.listdir(self.gt_path) if path.isfile(path.join(self.gt_path, name))].sort()
+        img_list = [name for name in os.listdir(self.img_path) if path.isfile(path.join(self.img_path, name))]
+        gt_list = [name for name in os.listdir(self.gt_path) if path.isfile(path.join(self.gt_path, name))]
+        img_list.sort()
+        gt_list.sort()
 
         '''make (image, gt_depth) pairs'''
         img_gt_pairs = []

@@ -113,6 +113,7 @@ class Conf_Conv(nn.Module):
         `Conf_Conv` outputs two pairs of confidence maps at different
         spatial resolutions for i) photometric and ii) perceptual losses
         '''
+        super(Conf_Conv, self).__init__()
         encoder = [
             nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1),
             nn.GroupNorm(16, 64),
@@ -142,7 +143,7 @@ class Conf_Conv(nn.Module):
 
         out_1 = [
             nn.Conv2d(128, 2, kernel_size=3, stride=1, padding=1),
-            nn.SoftPlus()
+            nn.Softplus()
         ]
 
         decoder_2 = [
@@ -153,7 +154,7 @@ class Conf_Conv(nn.Module):
             nn.GroupNorm(16, 64),
             nn.ReLU(),
             nn.Conv2d(64, 2, kernel_size=5, stride=1, padding=2),
-            nn.SoftPlus()
+            nn.Softplus()
         ]
 
         self.encoder = nn.Sequential(*encoder)

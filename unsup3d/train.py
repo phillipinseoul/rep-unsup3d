@@ -67,7 +67,7 @@ class Trainer():
         if is_debug:
             self.model = model.to(self.device)                                  #### to debug
         else:
-            self.model = PhotoGeoAE().to(self.device)
+            self.model = PhotoGeoAE(configs).to(self.device)
         
         self.optimizer = optims.Adam(
             params = self.model.parameters(),

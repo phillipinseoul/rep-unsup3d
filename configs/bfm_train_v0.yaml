@@ -21,6 +21,7 @@ light_v: light_v0
 view_v: view_v0
 
 use_gt_depth: true
+use_conf: true
 write_logs: true
 
 

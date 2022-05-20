@@ -6,7 +6,7 @@ from unsup3d.modules import Encoder, AutoEncoder, Conf_Conv
 
 # Image decompostion pipline
 class ImageDecomp():
-    def __init__(self, depth_v, alb_v, light_v, view_v):
+    def __init__(self, depth_v, alb_v, light_v, view_v, use_conf):
         if depth_v == 'depth_v0':
             self.depth_net = AutoEncoder(1)         # B x 1 x W x H
 
