@@ -13,9 +13,7 @@ def run(args):
 
     # load trainer
     trainer = Trainer(configs)
-
-    # TODO: run train/test
-
+    trainer.train()
     print('run complete!')
 
 
