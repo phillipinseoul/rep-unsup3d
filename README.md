@@ -2,6 +2,11 @@
 
 By Yuseung Lee & Inhee Lee
 
+#### 05/21 Debugging in progress (Yuseung Lee)
+```bash
+python run.py --configs configs/bfm_train_v0.yaml
+```
+
 #### 05/16 How to run
 ```bash
 python run.py --configs configs/celeba_train_v0.yaml
