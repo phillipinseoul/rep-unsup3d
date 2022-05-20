@@ -1,12 +1,12 @@
 # trainer
-dataset: celeba
+dataset: bfm
 num_epochs: 200
 batch_size: 32
 learning_rate: 0.0001
 run_train: true
-exp_name: celeba_train_v0
-exp_path: experiments/celeba_train
-chk_path: models/celeba_train
+exp_name: bfm_train_v0
+exp_path: experiments/bfm_train
+chk_path: models/bfm_train
 
 img_size: 64
 

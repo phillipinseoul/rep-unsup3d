@@ -62,7 +62,7 @@ class BFM(Dataset):
         '''make (image, gt_depth) pairs'''
         img_gt_pairs = []
         for image, gt_depth in zip(img_list, gt_list):
-            assert img.replace('image', 'depth') == gt_depth, 'image and gt_depth do not match'
+            assert image.replace('image', 'depth') == gt_depth, 'image and gt_depth do not match'
             img_gt_pairs.append((image, gt_depth))
 
         self.img_gt_pairs = img_gt_pairs

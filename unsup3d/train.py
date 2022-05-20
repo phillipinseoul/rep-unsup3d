@@ -97,6 +97,11 @@ class Trainer():
             if self.epoch % 20 == 0:
                 self.save_model(epch_loss)
 
+            '''add results to tensorboard'''
+            self.model.visualize(epch)
+
+            
+
     def _train(self):
         '''train model (single epoch)'''
         epch_loss = 0
