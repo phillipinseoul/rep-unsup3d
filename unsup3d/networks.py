@@ -28,10 +28,14 @@ class ImageDecomp(nn.Module):
             self.conf_net = Conf_Conv().to(device)
 
     def get_depth_map(self, input):
-        return self.depth_net(input)
+        res = self.depth_net(input)
+        res = 1.0 + res/10.0
+        return res
     
     def get_albedo(self, input):
-        return self.alb_net(input)
+        res = self.alb_net(input)
+        res = (res + 1.0)/ 2
+        return res
 
     def get_light(self, input):
         return self.light_net(input).squeeze(-1).squeeze(-1)

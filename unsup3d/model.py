@@ -103,7 +103,7 @@ class PhotoGeoAE(nn.Module):
 
         self.f_albedo = torch.flip(self.albedo, dims = [3])      # in pytorch, we should flip the last dimension
         self.f_depth = torch.flip(self.depth, dims = [3])        # we made comment as W x H order, but in fact it's H x W (torch default) 
-                                                       # So here, I flipped based on last dim
+                                                                 # So here, I flipped based on last dim
 
         ############################################ need to check flipping (05/14, inhee) !!!
 
@@ -131,6 +131,7 @@ class PhotoGeoAE(nn.Module):
         self.f_recon_output = f_org_img
 
         '''calculate loss'''
+        self.L1_loss = torch.abs(self.recon_output - input).mean()
         self.percep_loss = self.percep(input, self.recon_output, self.conf_percep) # (b_size)
         self.photo_loss = self.get_photo_loss(input, self.recon_output, self.conf)  # (b_size)
         self.org_loss = self.photo_loss + self.lambda_p * self.percep_loss          # (b_size)
@@ -239,6 +240,7 @@ class PhotoGeoAE(nn.Module):
         self.logger.add_scalar('losses/flip_loss', torch.mean(self.flip_loss), epoch)
 
         self.logger.add_scalar('losses/tot_loss', torch.mean(self.tot_loss), epoch)
+        self.logger.add_scalar('losses/L1_loss', self.L1_loss, epoch)
 
         if self.use_gt_depth:
             self.logger.add_scalar('losses/side_error', self.side_error, epoch)

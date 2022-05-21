@@ -30,5 +30,4 @@ if __name__ == "__main__":
     '''TODO: add more arguments'''
     args = parser.parse_args()
 
-
     run(args)
