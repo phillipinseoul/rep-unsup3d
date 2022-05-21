@@ -29,8 +29,6 @@ class PhotoGeoAE():
         self.light_v = configs['light_v']
         self.view_v = configs['view_v']
         self.use_gt_depth = configs['use_gt_depth']
-        
-        '''TODO: set configs'''
 
         '''initialize image decomposition networks'''
         self.imgDecomp = ImageDecomp(self.depth_v, self.alb_v, self.light_v, self.view_v)
@@ -43,6 +41,8 @@ class PhotoGeoAE():
         '''pipeline utils'''
         self.imgForm = ImageFormation(size=64)
         self.render = RenderPipeline(device=device)
+
+        ''''''
         
 
     def get_photo_loss(self, img1, img2, conf):
@@ -56,7 +56,7 @@ class PhotoGeoAE():
         return loss
 
 
-    def forward(self, input):
+    def forward(self, input, step, plot_interms = False):
         '''
         input:
         - input: (Bx3xHxW), preprocessed on dataloader as H=W=64
@@ -105,33 +105,84 @@ class PhotoGeoAE():
         f_recon_output = f_org_img
 
         '''calculate loss'''
-        percep_loss = self.percep(input, recon_output, conf_percep) # (b_size)
+        perceploss = self.percep(input, recon_output, conf_percep) # (b_size)
         photoloss = self.get_photo_loss(input, recon_output, conf)  # (b_size)
-        org_loss = photoloss + self.lambda_p * percep_loss          # (b_size)
+        org_loss = photoloss + self.lambda_p * perceploss          # (b_size)
         
-        f_percep_loss = self.percep(input, f_recon_output, f_conf_percep) # (b_size)
+        f_perceploss = self.percep(input, f_recon_output, f_conf_percep) # (b_size)
         f_photoloss = self.get_photo_loss(input, f_recon_output, f_conf)  # (b_size)
-        flip_loss = f_photoloss + self.lambda_p * f_percep_loss           # (b_size)
+        flip_loss = f_photoloss + self.lambda_p * f_perceploss           # (b_size)
         
         tot_loss = org_loss + self.lambda_f * flip_loss
 
         '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
-        if use_gt_depth:
+        if self.use_gt_depth:
             bfm_metrics = BFM_Metrics(org_depth, gt_depth)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
+        if plot_interms:
+            interms = {
+                'depth':depth,
+                'albedo':albedo,
+                'canon_img':canon_img,
+                'f_canon_img':f_canon_img,
+                'org_depth':org_depth,
+                'f_org_depth':f_org_depth,
+                'org_img':org_img,
+                'f_org_img':f_org_img,
+                'input_img':input
+            }# intermediate image
+            self.visualize(interms)
+
+        losses = {
+            'peceploss':perceploss.mean().detach().cpu().item(),
+            'photoloss':photoloss.mean().detach().cpu().item(),
+            'org_loss':org_loss.mean().detach().cpu().item(),
+            'f_peceploss':f_perceploss.mean().detach().cpu().item(),
+            'f_photoloss':f_photoloss.mean().detach().cpu().item(),
+            'flip_loss':flip_loss.mean().detach().cpu().item(),
+            'tot_loss':tot_loss.mean().detach().cpu().item()
+        }
+        self.logger(losses, step)
+
+
         return tot_loss
 
+    def logger(self, losses, step):
+        loss_list = list(losses.keys())
 
-    def visualize(self):
+        if self.training:
+            for loss_name in loss_list:
+                self.writer.add_scalar(
+                    'Loss_step/train_'+ loss_name,
+                    losses[loss_name],
+                    step
+                )
+        else:
+            for loss_name in loss_list:
+                self.writer.add_scalar(
+                    'Loss_step/val_'+ loss_name,
+                    losses[loss_name],
+                    step
+                )
+        
+
+
+    def visualize(self, interms):
         '''
         all codes for visualization, intermediate outputs
+
+
         '''
         pass
 
     def save_results(self):
         pass
+
+
+    def set_writer(self, writer):
+        self.writer = writer
 
 
 

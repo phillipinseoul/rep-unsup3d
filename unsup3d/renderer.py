@@ -280,9 +280,6 @@ class RenderPipeline(nn.Module):
         return org_img, org_depth
         
 
-
-
-
 ####################################################################
 # functions below here will be moved to utils later (05/13, inhee) #
 ####################################################################

@@ -23,5 +23,6 @@ with open(args.configs) as f:
 trainer = Trainer(configs)
 
 '''TODO: run train/test'''
+trainer.train()
 
 print('run complete!')
