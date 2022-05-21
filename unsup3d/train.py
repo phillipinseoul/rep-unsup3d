@@ -45,7 +45,7 @@ class Trainer():
 
         '''logger setting'''
         # self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
-        self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
+        # self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
 
         '''implement dataloader'''
         if configs['dataset'] == "celeba":
@@ -87,7 +87,7 @@ class Trainer():
     def train(self):
         init_epch = self.epoch
         for epch in range(init_epch, self.max_epoch):
-            epch_loss = self._train()
+            epch_loss = self._train(epch)
             self.epoch = epch
 
             if epch_loss < self.best_loss:
@@ -98,9 +98,9 @@ class Trainer():
                 self.save_model(epch_loss)
 
             '''add results to tensorboard'''
-            self.model.visualize(epch)
+            # self.model.visualize(epch)
             
-    def _train(self):
+    def _train(self, epoch):
         '''train model (single epoch)'''
         epch_loss = 0
         cnt = 0
@@ -122,6 +122,10 @@ class Trainer():
 
             if i % 30 == 0:
                 print(i, "step, loss : ", loss.detach().cpu().item())
+                self.model.visualize(epoch)
+                
+                '''break loop for test (yuseung 05/21)'''
+                break
         
         self.scheduler.step()
         return epch_loss
