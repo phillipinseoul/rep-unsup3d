@@ -374,17 +374,17 @@ def test_utils(depth, light, albedo, shading, normal, canon):
     # compare normal
     print("my normal: ", my_normal.shape, ", min: ", my_normal.min(),", max: ", my_normal.max())
     print("org normal: ", normal.shape, ", min: ", normal.min(),", max: ", normal.max())
-    compare_plot('./debug/normal.png',my_normal, normal.permute(0,3,1,2))
+    compare_plot('./debug/normal.png', my_normal, normal.permute(0,3,1,2))
 
     # compare shading
     print("my shading: ", my_shading.shape, ", min: ", my_shading.min(),", max: ", my_shading.max())
     print("org shading: ", shading.shape, ", min: ", shading.min(),", max: ", shading.max())
-    compare_plot('./debug/shadings.png',my_shading, shading)
+    compare_plot('./debug/shadings.png', my_shading, shading)
 
     # compare canon
     print("my canon: ", my_canon.shape, ", min: ", my_canon.min(),", max: ", my_canon.max())
     print("org canon: ", canon.shape, ", min: ", canon.min(),", max: ", canon.max())
-    compare_plot('./debug/canon.png',my_canon, canon, albedo)
+    compare_plot('./debug/canon.png', my_canon, canon, albedo)
 
     
 
@@ -405,7 +405,10 @@ def test_render(depth, img, view):
         title1='recon_img', 
         title2='depth'
     )
-    assert(0)
+    
+    plot_3d(depth[0,0,:,:].detach().cpu(), 2)
+    plot_3d(org_depth[0,0,:,:].detach().cpu(), 3)
+    
 
 
 
@@ -447,14 +450,10 @@ def compare_plot(fname, imgs1, imgs2, imgs3=None, title1='mine', title2='authors
     fig.savefig(fname)
 
 
-
 def to_zeroone(tensor):
     min = tensor.min()
     max = tensor.max()
     return (tensor - min)/(max-min+EPS)
-
-
-
 
 
 def test_data_loader(path):
@@ -498,6 +497,34 @@ def tensor_to_image(tensor):
     tensor_np = (tensor.squeeze()*255).to(dtype=torch.uint8).numpy()
     img = Image.fromarray(tensor_np)
     return img
+
+
+
+
+
+def plot_3d(depth, fig_ind):
+    '''
+    plot depth surface in 3D
+    '''
+    W, H = depth.squeeze().shape
+
+    lin_X = torch.linspace(0, W-1, W)
+    lin_Y = torch.linspace(0, H-1, H)
+    xx, yy = torch.meshgrid(lin_X, lin_Y, indexing = 'ij', )
+
+    fig = plt.figure(fig_ind)
+    ax = plt.axes(projection='3d')
+    ax.contour3D(xx, yy, depth.squeeze(), 50, cmap='binary')
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    ax.set_zlabel('z')
+
+
+        
+
+
+
+
 
 
 

@@ -6,6 +6,9 @@ import yaml
 from unsup3d import Trainer
 from tensorboardX import SummaryWriter
 
+import warnings
+#warnings.filterwarnings("error")
+
 def run(args):
     # load yaml file
     with open(args.configs) as f:
@@ -17,6 +20,7 @@ def run(args):
     print('run complete!')
 
 
+'''TODO: run train/test'''
 if __name__ == "__main__":
     # set configurations
     parser = argparse.ArgumentParser()

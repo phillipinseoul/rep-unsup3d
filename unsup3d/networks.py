@@ -1,13 +1,18 @@
 '''
 Define each network for the Photo-geometric Autoencoding pipeline.
 '''
+import torch.nn as nn
+import torch
+
 from unsup3d.modules import Encoder, AutoEncoder, Conf_Conv
 
 
+
 # Image decompostion pipline
-class ImageDecomp():
+class ImageDecomp(nn.Module):
     def __init__(self, device,
                  depth_v, alb_v, light_v, view_v, use_conf):
+        super(ImageDecomp,self).__init__()
         if depth_v == 'depth_v0':
             self.depth_net = AutoEncoder(cout=1).to(device)        # B x 1 x W x H
         if alb_v == 'alb_v0':
@@ -23,10 +28,14 @@ class ImageDecomp():
             self.conf_net = Conf_Conv().to(device)
 
     def get_depth_map(self, input):
-        return self.depth_net(input)
+        res = self.depth_net(input)
+        res = 1.0 + res/10.0
+        return res
     
     def get_albedo(self, input):
-        return self.alb_net(input)
+        res = self.alb_net(input)
+        res = (res + 1.0)/ 2
+        return res
 
     def get_light(self, input):
         return self.light_net(input).squeeze(-1).squeeze(-1)

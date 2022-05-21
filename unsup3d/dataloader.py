@@ -14,7 +14,7 @@ CelebA_PATH = '/root/unsup3d-rep/data/celeba'
 BFM_PATH = 'data/synface'
 
 class CelebA(Dataset):
-    def __init__(self, setting = "train", img_size = (64,64)):
+    def __init__(self, setting = "train", img_size = 64):
         '''check setting first'''
         if setting not in setting_list:
             print("CelebA, wrong data setting, you should select one of 'train', 'test' or 'val'.")
@@ -23,7 +23,7 @@ class CelebA(Dataset):
         
         self.path = path.join(CelebA_PATH, setting)
         self.file_list = [name for name in os.listdir(self.path) if path.isfile(path.join(self.path,name))]
-        self.img_size = img_size
+        self.img_size = (img_size, img_size)
 
     def __getitem__(self, idx):
         '''
@@ -41,11 +41,12 @@ class CelebA(Dataset):
         return re_img
 
     def __len__(self):
-        return len(self.file_list)
+        return 32*20
+        #return len(self.file_list)
 
 
 class BFM(Dataset):
-    def __init__(self, setting = "train", img_size = (64, 64)):
+    def __init__(self, setting = "train", img_size = 64):
         '''check setting first'''
         if setting not in setting_list:
             print("BFM, wrong data setting, you should select one of 'train', 'test' or 'val'.")
@@ -55,7 +56,7 @@ class BFM(Dataset):
         self.path = path.join(BFM_PATH, setting)
         self.img_path = path.join(self.path, 'image')       # path for images
         self.gt_path = path.join(self.path, 'depth')        # path for ground truth depth maps
-        self.img_size = img_size
+        self.img_size = (img_size, img_size)
 
         img_list = [name for name in os.listdir(self.img_path) if path.isfile(path.join(self.img_path, name))]
         gt_list = [name for name in os.listdir(self.gt_path) if path.isfile(path.join(self.gt_path, name))]
