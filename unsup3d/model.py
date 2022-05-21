@@ -288,7 +288,9 @@ class PercepLoss(nn.Module):
         # print("Feature dim:", n_feat)
 
         feat_L1 = torch.abs(feat1 - feat2)
+
         loss = torch.log(1/torch.sqrt(2 * torch.pi * conf ** 2)) \
+
             * torch.exp(-feat_L1**2/(2*conf**2))
         
         num_cases = feat1.shape[2] * feat1.shape[3] * n_feat
