@@ -90,7 +90,7 @@ class Trainer():
             self.model = model.to(self.device)                                  #### to debug
         else:
             self.model = PhotoGeoAE(configs).to(self.device)
-        self.model.set_writer(self.writer)
+        self.model.set_logger(self.writer)
 
         '''define optimizer and scheduler'''
         self.optimizer = optims.Adam(
@@ -111,7 +111,7 @@ class Trainer():
     def train(self):
         init_epch = self.epoch
         for epch in range(init_epch, self.max_epoch):
-            epch_loss = self._train()
+            epch_loss = self._train(epch)
             self.epoch = epch
 
             if epch_loss < self.best_loss:
@@ -130,8 +130,13 @@ class Trainer():
         epch_loss = 0
         cnt = 0
         for i, inputs in tqdm(enumerate(self.dataloader, 0)):
-            inputs = inputs.to(self.device)
-            losses = self.model(inputs, self.step)
+            if self.model.use_gt_depth:
+                inputs[0] = inputs[0].to(self.device)
+                inputs[1] = inputs[1].to(self.device)
+            else:
+                inputs = inputs.to(self.device)
+            
+            losses = self.model(inputs)
             loss = torch.mean(losses)
             loss.backward()
             self.optimizer.step()
@@ -142,11 +147,15 @@ class Trainer():
             self.step += 1
 
             self.writer.add_scalar("Loss_step/train", loss.detach().cpu().item(), self.step)
+            if i % 30 == 0:
+                print(i, "step, loss : ", loss.detach().cpu().item())
+                self.model.visualize(self.epoch)
+                
+                '''break loop for test (yuseung 05/21)'''
+                break
         
         self.scheduler.step()
-        return epch_loss
-        # return epch_loss/cnt
-
+        return epch_loss/cnt
 
     def load_model(self, PATH):
         '''
@@ -158,7 +167,6 @@ class Trainer():
         self.epoch = chkpt['epoch']
         self.step = chkpt['step']
         self.best_loss = chkpt['loss']
-
 
     def save_model(self, loss):
         if loss < self.best_loss:

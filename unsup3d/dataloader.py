@@ -10,7 +10,8 @@ import os.path as path
 MAX_PIX = 255
 setting_list = ['train','val','test']
 CelebA_PATH = '/root/unsup3d-rep/data/celeba'
-BFM_PATH = '/root/unsup3d-rep/data/synface'
+# BFM_PATH = '/root/unsup3d-rep/data/synface'
+BFM_PATH = 'data/synface'
 
 class CelebA(Dataset):
     def __init__(self, setting = "train", img_size = 64):
@@ -56,13 +57,15 @@ class BFM(Dataset):
         self.gt_path = path.join(self.path, 'depth')        # path for ground truth depth maps
         self.img_size = (img_size, img_size)
 
-        img_list = [name for name in os.listdir(self.img_path) if path.isfile(path.join(self.img_path, name))].sort()
-        gt_list = [name for name in os.listdir(self.gt_path) if path.isfile(path.join(self.gt_path, name))].sort()
+        img_list = [name for name in os.listdir(self.img_path) if path.isfile(path.join(self.img_path, name))]
+        gt_list = [name for name in os.listdir(self.gt_path) if path.isfile(path.join(self.gt_path, name))]
+        img_list.sort()
+        gt_list.sort()
 
         '''make (image, gt_depth) pairs'''
         img_gt_pairs = []
         for image, gt_depth in zip(img_list, gt_list):
-            assert img.replace('image', 'depth') == gt_depth, 'image and gt_depth do not match'
+            assert image.replace('image', 'depth') == gt_depth, 'image and gt_depth do not match'
             img_gt_pairs.append((image, gt_depth))
 
         self.img_gt_pairs = img_gt_pairs
@@ -81,9 +84,9 @@ class BFM(Dataset):
         gt_depth = cv2.imread(path.join(self.gt_path, self.img_gt_pairs[idx][1]))
         re_depth = cv2.resize(gt_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_depth = cv2.cvtColor(re_depth, cv2.COLOR_BGR2GRAY)
-        re_depth = torch.tensor(gt_depth, dtype = torch.float32).unsqueeze(-1)
-        re_depth = re_img.permute(2, 0, 1)                  # 1 x H x W
-        re_depth /= MAX_PIX                                 # change value range 0~1
+        re_depth = torch.tensor(re_depth, dtype = torch.float32).unsqueeze(-1)
+        re_depth = re_depth.permute(2, 0, 1)                  # 1 x H x W
+        re_depth /= MAX_PIX                                   # change value range 0~1
         
         return re_img, re_depth
     

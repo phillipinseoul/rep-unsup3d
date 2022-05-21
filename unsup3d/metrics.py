@@ -6,13 +6,14 @@ import torch
 from .utils import ImageFormation
 
 class BFM_Metrics():
-    def __init__(self, depth_ac, depth_gt):
+    def __init__(self, depth_ac, depth_gt, device="cuda"):
         '''
         - depth_ac: depth map of the actual (warped) view
         - depth_gt: ground truth depth map 
         '''
         self.depth_ac = depth_ac          # B x 1 x W x H
         self.depth_gt = depth_gt          # B x 1 x W x H
+        self.device = device
 
     def SIDE_error(self):
         '''SIDE (scale-invariant depth error) between depth maps'''
@@ -26,7 +27,7 @@ class BFM_Metrics():
 
     def MAD_error(self):
         '''MAD (mean angle deviation) between normal maps'''
-        imageForm = ImageFormation()
+        imageForm = ImageFormation(device=self.device, size=64)
 
         # get normal maps
         normal_ac = imageForm.depth_to_normal(self.depth_ac)    # B x 3 x W x H

@@ -1,0 +1,27 @@
+# trainer
+dataset: bfm
+num_epochs: 200
+batch_size: 32
+learning_rate: 0.0001
+run_train: true
+exp_name: bfm_train_v0
+exp_path: experiments/bfm_train
+chk_path: models/bfm_train
+
+img_size: 64
+
+# light configs
+lambda_p: 0.5
+lambda_f: 1.0
+
+# network versions
+depth_v: depth_v0
+alb_v: alb_v0
+light_v: light_v0
+view_v: view_v0
+
+use_gt_depth: true
+use_conf: true
+write_logs: true
+
+
