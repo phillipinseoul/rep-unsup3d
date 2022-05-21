@@ -54,7 +54,7 @@ class PhotoGeoAE(nn.Module):
     def get_photo_loss(self, img1, img2, conf):
         L1_loss = torch.abs(img1 - img2)
 
-        losses = torch.log(torch.sqrt(2 * torch.pi * conf ** 2)) \
+        losses = torch.log(1 / torch.sqrt(2 * torch.pi * conf ** 2)) \
             * torch.exp(-torch.sqrt(torch.Tensor([2])) * L1_loss / conf)
 
         num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
@@ -221,7 +221,7 @@ class PercepLoss(nn.Module):
         print("Feature dim:", n_feat)
 
         feat_L1 = torch.abs(feat1 - feat2)
-        loss = torch.log(torch.sqrt(2 * torch.pi * conf ** 2)) \
+        loss = torch.log(1 / torch.sqrt(2 * torch.pi * conf ** 2)) \
             * torch.exp(-feat_L1**2/(2*conf**2))
         
         num_cases = feat1.shape[2] * feat1.shape[3] * n_feat
