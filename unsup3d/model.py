@@ -2,6 +2,7 @@
 from locale import normalize
 from cv2 import norm
 from os.path import join
+import os
 import torch
 import torch.nn as nn
 import torchvision
@@ -34,7 +35,11 @@ class PhotoGeoAE(nn.Module):
         self.b_size = configs['batch_size']
         
         if configs['write_logs']:
-            self.logger = SummaryWriter(join(configs['exp_path'], 'logs', datetime.now().strftime("%H:%M:%S")))
+            log_dir = join(configs['exp_path'], 'logs', 'exp_' + datetime.now().strftime("%H%M%S"))
+            # log_dir = join(configs['exp_path'], 'logs')
+            # os.makedirs(log_dir)
+            self.logger = SummaryWriter(str(log_dir))
+            # self.logger = SummaryWriter(join(configs['exp_path'], 'logs', datetime.now().strftime("%H:%M:%S")))
 
         '''initialize image decomposition networks'''
         self.imgDecomp = ImageDecomp(device=device,
@@ -135,7 +140,7 @@ class PhotoGeoAE(nn.Module):
             gt_depth_masked = get_mask(gt_depth)
 
             '''compute BFM metrics'''
-            bfm_metrics = BFM_Metrics(org_depth_masked, gt_depth_masked)
+            bfm_metrics = BFM_Metrics(org_depth_masked, gt_depth_masked, device)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
@@ -171,15 +176,15 @@ class PhotoGeoAE(nn.Module):
         add_image_log('image_decomposition/f_shading', self.f_shading, epoch)
         add_image_log('image_decomposition/f_canon_img', self.f_canon_img, epoch)
 
-        self.logger.add_scalar('losses/percep_loss', self.percep_loss, epoch)
-        self.logger.add_scalar('losses/photo_loss', self.photo_loss, epoch)
-        self.logger.add_scalar('losses/org_loss', self.org_loss, epoch)
+        self.logger.add_scalar('losses/percep_loss', torch.mean(self.percep_loss), epoch)
+        self.logger.add_scalar('losses/photo_loss', torch.mean(self.photo_loss), epoch)
+        self.logger.add_scalar('losses/org_loss', torch.mean(self.org_loss), epoch)
 
-        self.logger.add_scalar('losses/f_percep_loss', self.f_percep_loss, epoch)
-        self.logger.add_scalar('losses/f_photo_loss', self.f_photo_loss, epoch)
-        self.logger.add_scalar('losses/flip_loss', self.flip_loss, epoch)
+        self.logger.add_scalar('losses/f_percep_loss', torch.mean(self.f_percep_loss), epoch)
+        self.logger.add_scalar('losses/f_photo_loss', torch.mean(self.f_photo_loss), epoch)
+        self.logger.add_scalar('losses/flip_loss', torch.mean(self.flip_loss), epoch)
 
-        self.logger.add_scalar('losses/tot_loss', self.tot_loss, epoch)
+        self.logger.add_scalar('losses/tot_loss', torch.mean(self.tot_loss), epoch)
 
         if self.use_gt_depth:
             self.logger.add_scalar('losses/side_error', self.side_error, epoch)
@@ -218,7 +223,7 @@ class PercepLoss(nn.Module):
         feat2 = self.relu3_3(n_img2)
 
         n_feat = feat1.shape[1]
-        print("Feature dim:", n_feat)
+        # print("Feature dim:", n_feat)
 
         feat_L1 = torch.abs(feat1 - feat2)
         loss = torch.log(1 / torch.sqrt(2 * torch.pi * conf ** 2)) \
