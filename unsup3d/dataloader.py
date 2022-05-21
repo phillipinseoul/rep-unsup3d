@@ -41,7 +41,8 @@ class CelebA(Dataset):
         return re_img
 
     def __len__(self):
-        return len(self.file_list)
+        return 32*200
+        #return len(self.file_list)
 
 
 class BFM(Dataset):

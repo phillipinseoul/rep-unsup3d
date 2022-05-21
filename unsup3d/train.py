@@ -41,8 +41,8 @@ class Trainer():
 
         '''path relevant'''
         now = time.localtime()
-        curr_time = "%02d_%02d__%02d_%02d"&(now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
-        self.exp_name = configs['exp_name_'] + curr_time
+        curr_time = "_%02d_%02d__%02d_%02d"%(now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min)
+        self.exp_name = configs['exp_name'] + curr_time
         self.exp_path = path.join(configs['exp_path'], self.exp_name)
         os.makedirs(self.exp_path, exist_ok=True)
         self.save_path = path.join(self.exp_path, 'models')
@@ -111,7 +111,7 @@ class Trainer():
     def train(self):
         init_epch = self.epoch
         for epch in range(init_epch, self.max_epoch):
-            epch_loss = self._train(epch)
+            epch_loss = self._train()
             self.epoch = epch
 
             if epch_loss < self.best_loss:
@@ -124,6 +124,7 @@ class Trainer():
                 self.save_model(epch_loss)
 
             self.writer.add_scalar("Loss_epch/train", epch_loss, self.epoch)
+            self.model.visualize(self.epoch)
 
     def _train(self):
         '''train model (single epoch)'''
@@ -147,12 +148,7 @@ class Trainer():
             self.step += 1
 
             self.writer.add_scalar("Loss_step/train", loss.detach().cpu().item(), self.step)
-            if i % 30 == 0:
-                print(i, "step, loss : ", loss.detach().cpu().item())
-                self.model.visualize(self.epoch)
-                
-                '''break loop for test (yuseung 05/21)'''
-                break
+            self.model.loss_plot(self.step)
         
         self.scheduler.step()
         return epch_loss/cnt

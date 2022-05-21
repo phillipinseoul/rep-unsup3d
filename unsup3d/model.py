@@ -34,12 +34,19 @@ class PhotoGeoAE(nn.Module):
         self.use_conf = configs['use_conf']
         self.b_size = configs['batch_size']
         
+        '''
+        # Inhee (05/21) I use different path definition here.
+
         if configs['write_logs']:
             log_dir = join(configs['exp_path'], 'logs', 'exp_' + datetime.now().strftime("%H%M%S"))
             # log_dir = join(configs['exp_path'], 'logs')
             # os.makedirs(log_dir)
             self.logger = SummaryWriter(str(log_dir))
             # self.logger = SummaryWriter(join(configs['exp_path'], 'logs', datetime.now().strftime("%H:%M:%S")))
+        
+        
+        '''
+
 
         '''initialize image decomposition networks'''
         self.imgDecomp = ImageDecomp(device=device,
@@ -59,7 +66,7 @@ class PhotoGeoAE(nn.Module):
     def get_photo_loss(self, img1, img2, conf):
         L1_loss = torch.abs(img1 - img2)
 
-        losses = torch.log(torch.sqrt(2 * torch.pi * conf ** 2)) \
+        losses = torch.log(1/torch.sqrt(2 * torch.pi * conf ** 2)) \
             * torch.exp(-torch.sqrt(torch.Tensor([2]).to(device)) * L1_loss / conf)
 
         num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
@@ -242,7 +249,7 @@ class PhotoGeoAE(nn.Module):
 
 class PercepLoss(nn.Module):
     def __init__(self, requires_grad = False):
-        super(PercepLoss,self).__init__()
+        super(PercepLoss, self).__init__()
         self.layers = pre_model.vgg16(pretrained=True)
         
         # layer 15's output is ReLU3_3
@@ -252,6 +259,9 @@ class PercepLoss(nn.Module):
         # normalization of input
         self.transforms = transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))
 
+        for module in modules:
+            for param in module.parameters():
+                param.requires_grad = requires_grad
 
     def forward(self, img1, img2, conf):
         '''
@@ -273,7 +283,7 @@ class PercepLoss(nn.Module):
         # print("Feature dim:", n_feat)
 
         feat_L1 = torch.abs(feat1 - feat2)
-        loss = torch.log(torch.sqrt(2 * torch.pi * conf ** 2)) \
+        loss = torch.log(1/torch.sqrt(2 * torch.pi * conf ** 2)) \
             * torch.exp(-feat_L1**2/(2*conf**2))
         
         num_cases = feat1.shape[2] * feat1.shape[3] * n_feat
