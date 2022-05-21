@@ -85,7 +85,7 @@ class CelebA_Preprocess():
                 x = x + x_front
                 y = y + y_front
 
-            crop_img = img[x:(x+w),y:(y+h),:]
+            crop_img = img[y:(y+h),x:(x+w),:]
             re_crop_img = cv2.resize(crop_img, dsize=(128,128), interpolation = cv2.INTER_LINEAR)
             
             save_path = None

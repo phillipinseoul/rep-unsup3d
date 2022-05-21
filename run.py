@@ -6,6 +6,9 @@ import yaml
 from unsup3d import Trainer
 from tensorboardX import SummaryWriter
 
+import warnings
+#warnings.filterwarnings("error")
+
 def run(args):
     # load yaml file
     with open(args.configs) as f:
@@ -26,5 +29,6 @@ if __name__ == "__main__":
     # parser.add_argument('--use_gpu', help='Set the usage of GPU', type=bool, default=True)
     '''TODO: add more arguments'''
     args = parser.parse_args()
+
 
     run(args)

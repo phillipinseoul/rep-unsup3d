@@ -243,7 +243,8 @@ class RenderPipeline(nn.Module):
             input = canon_img,                          # B 3 W H
             grid = warp_grid.permute(0,2,3,1),          # B W H 2
             mode = 'bilinear',
-            padding_mode = 'zeros'
+            padding_mode = 'zeros',
+            align_corners = True
         )
         
 

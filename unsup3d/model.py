@@ -87,6 +87,7 @@ class PhotoGeoAE(nn.Module):
             input, gt_depth = input
 
         '''image decomposition'''
+        self.input = input
         self.depth = self.imgDecomp.get_depth_map(input)     # B x 3 x W x H
         self.albedo = self.imgDecomp.get_albedo(input)       # B x 1 x W x H 
         self.view = self.imgDecomp.get_view(input)           # B x 6
@@ -224,6 +225,8 @@ class PhotoGeoAE(nn.Module):
         add_image_log('image_decomposition/f_normal', self.f_normal, epoch)
         add_image_log('image_decomposition/f_shading', self.f_shading, epoch)
         add_image_log('image_decomposition/f_canon_img', self.f_canon_img, epoch)
+
+        add_image_log('imafe_decomposition/input_img', self.input, epoch)
 
 
     def loss_plot(self, epoch):

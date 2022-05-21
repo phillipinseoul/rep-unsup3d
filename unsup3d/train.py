@@ -19,7 +19,6 @@ from unsup3d.dataloader import CelebA, BFM
 # initially, 
 LR = 1e-4
 max_epoch = 200
-load_chk = False
 chk_PATH = './chk.pt'   # need to change later
 
 is_debug = False
@@ -32,6 +31,13 @@ class Trainer():
         self.batch_size = configs['batch_size']
         self.learning_rate = configs['learning_rate']
         self.is_train = configs['run_train']
+        self.load_chk = configs['load_chk']
+
+        
+        if self.load_chk:
+            self.load_path = configs['load_path']
+        else:
+            self.load_path = None
 
         self.epoch = 0
         self.step = 0
@@ -48,7 +54,7 @@ class Trainer():
         self.save_path = path.join(self.exp_path, 'models')
         os.makedirs(self.save_path, exist_ok=True)
         self.best_path = path.join(self.save_path, 'best.pt')
-        self.load_path = None
+        
 
         '''logger setting'''
         # self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
@@ -104,7 +110,7 @@ class Trainer():
         )
 
         '''load_model and optimizer state'''
-        if load_chk:
+        if self.load_chk:
             self.load_model(self.load_path if self.load_path is not None else self.best_path)
         
 
