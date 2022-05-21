@@ -45,7 +45,7 @@ class Trainer():
 
         '''logger setting'''
         # self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
-        self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
+        # self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
 
         '''implement dataloader'''
         if configs['dataset'] == "celeba":
@@ -87,7 +87,7 @@ class Trainer():
     def train(self):
         init_epch = self.epoch
         for epch in range(init_epch, self.max_epoch):
-            epch_loss = self._train()
+            epch_loss = self._train(epch)
             self.epoch = epch
 
             if epch_loss < self.best_loss:
@@ -98,16 +98,19 @@ class Trainer():
                 self.save_model(epch_loss)
 
             '''add results to tensorboard'''
-            self.model.visualize(epch)
-
+            # self.model.visualize(epch)
             
-
-    def _train(self):
+    def _train(self, epoch):
         '''train model (single epoch)'''
         epch_loss = 0
         cnt = 0
         for i, inputs in tqdm(enumerate(self.dataloader, 0)):
-            inputs = inputs.to(self.device)
+            if self.model.use_gt_depth:
+                inputs[0] = inputs[0].to(self.device)
+                inputs[1] = inputs[1].to(self.device)
+            else:
+                inputs = inputs.to(self.device)
+            
             losses = self.model(inputs)
             loss = torch.mean(losses)
             loss.backward()
@@ -117,13 +120,15 @@ class Trainer():
             epch_loss += loss.detach().cpu()
             cnt += 1
 
-            if i%30 == 0:
+            if i % 30 == 0:
                 print(i, "step, loss : ", loss.detach().cpu().item())
+                self.model.visualize(epoch)
+                
+                '''break loop for test (yuseung 05/21)'''
+                break
         
         self.scheduler.step()
         return epch_loss
-        # return epch_loss/cnt
-
 
     def load_model(self, PATH):
         '''
@@ -134,7 +139,6 @@ class Trainer():
         self.optimizer.load_state_dict(chkpt['optimizer_state_dict'])
         self.epoch = chkpt['epoch']
         self.best_loss = chkpt['loss']
-
 
     def save_model(self, loss):
         if loss < self.best_loss:

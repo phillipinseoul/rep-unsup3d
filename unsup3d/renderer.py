@@ -80,7 +80,7 @@ class RenderPipeline(nn.Module):
         # define faces here
         # it can be reused, unless the input shape or batch_size changes
         # we should drop last-batch on dataloader!!!!!  ----------------probably erroneous-----------------> (05/15 inhee)
-        self.faces = get_faces(B,W,H).to(self.device)
+        self.faces = get_faces(B, W, H).to(self.device)
         
 
     def canon_depth_to_3d(self, canon_depth):
@@ -166,12 +166,10 @@ class RenderPipeline(nn.Module):
         vertices = org_pc.reshape(B, 3, -1)    # B x 3 x WH
         vertices = vertices.permute(0, 2, 1)   # B x WH x 3
        
-
         org_depth = self.renderer.render_depth(
-            vertices = vertices,                        # B x N_vertices(WH) x 3
-            faces = self.faces,                           # B x N_faces(2(W-1)(H-1)) x 3
+            vertices = vertices,                     # B x N_vertices(WH) x 3
+            faces = self.faces,                      # B x N_faces(2(W-1)(H-1)) x 3
         )
-
 
         # allow extra margin
         margin = (self.max_depth - self.min_depth)/2
@@ -385,12 +383,12 @@ def get_rot_mat(alpha, beta, gamma):
 
     ################################################# YOU NEED TO TEST IT WHETHER IT'S PROPER (05/13) #######
     '''
+
     # generate rotation matrix
     device = alpha.device
     a = alpha/180 * torch.pi
     b = beta/180 * torch.pi
     g = gamma/180 * torch.pi
-    
     
     ## <rot_a>
     ##
@@ -450,11 +448,11 @@ def get_rot_mat(alpha, beta, gamma):
         ], dim = 1
     )  
     rot_mat = torch.matmul(torch.matmul(rot_a,rot_b),rot_g)
-    
+
     return rot_mat
 
 
-def get_faces(B,W,H):
+def get_faces(B, W, H):
     '''
     input:
     - B, W, H: size of input shape

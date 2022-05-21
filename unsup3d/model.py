@@ -2,6 +2,7 @@
 from locale import normalize
 from cv2 import norm
 from os.path import join
+import os
 import torch
 import torch.nn as nn
 import torchvision
@@ -18,8 +19,10 @@ from unsup3d.utils import get_mask
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class PhotoGeoAE():
+class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
+        super(PhotoGeoAE, self).__init__()
+
         '''initialize params'''
         self.lambda_p = configs['lambda_p']
         self.lambda_f = configs['lambda_f']
@@ -29,28 +32,35 @@ class PhotoGeoAE():
         self.view_v = configs['view_v']
         self.use_gt_depth = configs['use_gt_depth']
         self.use_conf = configs['use_conf']
+        self.b_size = configs['batch_size']
         
         if configs['write_logs']:
-            self.logger = SummaryWriter(join(configs['exp_path'], 'logs', datetime.now().strftime("%H:%M:%S")))
+            log_dir = join(configs['exp_path'], 'logs', 'exp_' + datetime.now().strftime("%H%M%S"))
+            # log_dir = join(configs['exp_path'], 'logs')
+            # os.makedirs(log_dir)
+            self.logger = SummaryWriter(str(log_dir))
+            # self.logger = SummaryWriter(join(configs['exp_path'], 'logs', datetime.now().strftime("%H:%M:%S")))
 
         '''initialize image decomposition networks'''
-        self.imgDecomp = ImageDecomp(self.depth_v, 
-                                     self.alb_v, 
-                                     self.light_v, 
-                                     self.view_v,
-                                     self.use_conf)
+        self.imgDecomp = ImageDecomp(device=device,
+                                     depth_v=self.depth_v, 
+                                     alb_v=self.alb_v, 
+                                     light_v=self.light_v, 
+                                     view_v=self.view_v,
+                                     use_conf=self.use_conf)
 
         self.percep = PercepLoss()
 
         '''pipeline utils'''
-        self.imgForm = ImageFormation(size=64)
-        self.render = RenderPipeline(device=device)
+        self.imgForm = ImageFormation(device=device, size=64)
+        self.render = RenderPipeline(device=device, b_size=self.b_size)
         
 
     def get_photo_loss(self, img1, img2, conf):
         L1_loss = torch.abs(img1 - img2)
+
         losses = torch.log(torch.sqrt(2 * torch.pi * conf ** 2)) \
-            * torch.exp(-torch.sqrt(2) * L1_loss / conf)
+            * torch.exp(-torch.sqrt(torch.Tensor([2]).to(device)) * L1_loss / conf)
 
         num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
         loss = -torch.sum(losses, dim=(1, 2, 3)) / num_cases
@@ -72,8 +82,8 @@ class PhotoGeoAE():
         '''image decomposition'''
         self.depth = self.imgDecomp.get_depth_map(input)     # B x 3 x W x H
         self.albedo = self.imgDecomp.get_albedo(input)       # B x 1 x W x H 
-        self.view = self.imgDecomp.get_view(input)           # B x 6 x 1 x 1
-        self.light = self.imgDecomp.get_light(input)         # B x 4 x 1 x 1
+        self.view = self.imgDecomp.get_view(input)           # B x 6
+        self.light = self.imgDecomp.get_light(input)         # B x 4
 
         raw_conf_percep, raw_conf = self.imgDecomp.get_confidence(input)    # B 2 W/4 H/4 ,, B 2 W H 
 
@@ -91,17 +101,22 @@ class PhotoGeoAE():
 
         '''implement some pipeline'''
         # unflipped case
-        self.normal = self.imgForm.depth_to_normal(self.depth)             # B x 3 x W x H
+        self.normal = self.imgForm.depth_to_normal(self.depth)                  # B x 3 x W x H
         self.shading = self.imgForm.normal_to_shading(self.normal, self.light)  # B x 1 x W x H 
         self.canon_img = self.imgForm.alb_to_canon(self.albedo, self.shading)   # B x 3 x W x H
-        org_img, org_depth = self.render(self.depth, self.canon_img, self.view)
+
+        org_img, org_depth = self.render(canon_depth=self.depth, 
+                                         canon_img=self.canon_img, 
+                                         views=self.view)
 
         # flipped case
         self.f_normal = self.imgForm.depth_to_normal(self.f_depth)             # B x 3 x W x H
         self.f_shading = self.imgForm.normal_to_shading(self.f_normal, self.light)  # B x 1 x W x H 
         self.f_canon_img = self.imgForm.alb_to_canon(self.f_albedo, self.f_shading) # B x 3 x W x H
 
-        f_org_img, f_org_depth = self.render(self.f_depth, self.f_canon_img, self.view)
+        f_org_img, f_org_depth = self.render(canon_depth=self.f_depth, 
+                                             canon_img=self.f_canon_img, 
+                                             views=self.view)
 
         # final results
         self.recon_output = org_img
@@ -125,7 +140,7 @@ class PhotoGeoAE():
             gt_depth_masked = get_mask(gt_depth)
 
             '''compute BFM metrics'''
-            bfm_metrics = BFM_Metrics(org_depth_masked, gt_depth_masked)
+            bfm_metrics = BFM_Metrics(org_depth_masked, gt_depth_masked, device)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
@@ -161,25 +176,22 @@ class PhotoGeoAE():
         add_image_log('image_decomposition/f_shading', self.f_shading, epoch)
         add_image_log('image_decomposition/f_canon_img', self.f_canon_img, epoch)
 
-        self.logger.add_scalar('losses/percep_loss', self.percep_loss, epoch)
-        self.logger.add_scalar('losses/photo_loss', self.photo_loss, epoch)
-        self.logger.add_scalar('losses/org_loss', self.org_loss, epoch)
+        self.logger.add_scalar('losses/percep_loss', torch.mean(self.percep_loss), epoch)
+        self.logger.add_scalar('losses/photo_loss', torch.mean(self.photo_loss), epoch)
+        self.logger.add_scalar('losses/org_loss', torch.mean(self.org_loss), epoch)
 
-        self.logger.add_scalar('losses/f_percep_loss', self.f_percep_loss, epoch)
-        self.logger.add_scalar('losses/f_photo_loss', self.f_photo_loss, epoch)
-        self.logger.add_scalar('losses/flip_loss', self.flip_loss, epoch)
+        self.logger.add_scalar('losses/f_percep_loss', torch.mean(self.f_percep_loss), epoch)
+        self.logger.add_scalar('losses/f_photo_loss', torch.mean(self.f_photo_loss), epoch)
+        self.logger.add_scalar('losses/flip_loss', torch.mean(self.flip_loss), epoch)
 
-        self.logger.add_scalar('losses/tot_loss', self.tot_loss, epoch)
+        self.logger.add_scalar('losses/tot_loss', torch.mean(self.tot_loss), epoch)
 
         if self.use_gt_depth:
             self.logger.add_scalar('losses/side_error', self.side_error, epoch)
             self.logger.add_scalar('losses/mad_error', self.mad_error, epoch)
 
-
     def save_results(self):
         pass
-
-
 
 class PercepLoss(nn.Module):
     def __init__(self, requires_grad = False):
@@ -211,7 +223,7 @@ class PercepLoss(nn.Module):
         feat2 = self.relu3_3(n_img2)
 
         n_feat = feat1.shape[1]
-        print("Feature dim:", n_feat)
+        # print("Feature dim:", n_feat)
 
         feat_L1 = torch.abs(feat1 - feat2)
         loss = torch.log(torch.sqrt(2 * torch.pi * conf ** 2)) \

@@ -18,6 +18,8 @@ import PIL
 import yaml
 from tensorboardX import SummaryWriter
 
+# device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 def test_0517():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     writer = SummaryWriter('test_results/logs')
@@ -70,7 +72,7 @@ class SimpleAE(nn.Module):
         self.get_view = Encoder(6)
         self.use_gt_depth = False
         self.percep = PercepLoss()
-        self.imgForm = ImageFormation(size=64)
+        self.imgForm = ImageFormation(device="cpu", size=64)
         self.render = RenderPipeline(
             b_size = 1,
             device=device
@@ -90,7 +92,7 @@ class SimpleAE(nn.Module):
         depth = self.get_depth_map(input)
         albedo = self.get_albedo(input)
         view = self.get_view(input).squeeze(-1).squeeze(-1)
-        light = self.get_light(input)
+        light = self.get_light(input).squeeze(-1).squeeze(-1)
 
         normal = self.imgForm.depth_to_normal(depth)
         shading = self.imgForm.normal_to_shading(normal, light)
@@ -130,8 +132,8 @@ def test_0518():
     plt.savefig('masked_erode.png')
     
 if __name__ == '__main__':
-    # test_0517()
-    test_0518()
+    test_0517()
+    # test_0518()
 
 
 
