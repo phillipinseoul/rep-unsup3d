@@ -106,12 +106,14 @@ class Trainer():
         '''define optimizer and scheduler'''
         self.optimizer = optims.Adam(
             params = self.model.parameters(),
-            lr = self.learning_rate
+            lr = self.learning_rate,
+            betas = (0.9, 0.999),
+            weight_decay = 5e-4
         )
 
         self.scheduler = optims.lr_scheduler.LambdaLR(
             optimizer = self.optimizer,
-            lr_lambda = lambda epoch: 0.95 ** epoch
+            lr_lambda = lambda epoch: 0.95 ** epoch,
         )
 
         '''load_model and optimizer state'''
@@ -134,7 +136,7 @@ class Trainer():
                 # save periodically
                 self.save_model(epch_loss)
 
-            self.writer.add_scalar("Loss_epch/train", epch_loss, self.epoch)
+            self.writer.add_scalar("loss_epch/train", epch_loss, self.epoch)
 
             if self.epoch % self.fig_epoch == 0:
                 self.model.visualize(self.epoch)
@@ -160,13 +162,13 @@ class Trainer():
             cnt += 1
             self.step += 1
 
-            self.writer.add_scalar("Loss_step/train", loss.detach().cpu().item(), self.step)
+            self.writer.add_scalar("loss_step/train", loss.detach().cpu().item(), self.step)
             self.model.loss_plot(self.step)
 
             if i % 50 == 0:
                 self.model.visualize(self.step)
         
-        self.scheduler.step()
+        # self.scheduler.step()
         # return epch_loss/cnt
         return epch_loss
 

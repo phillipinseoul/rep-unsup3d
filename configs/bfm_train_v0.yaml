@@ -11,7 +11,7 @@ chk_path: models/bfm_train
 img_size: 64
 
 # light configs
-lambda_p: 0.5
+lambda_p: 0.1
 lambda_f: 1.0
 
 # network versions

@@ -22,10 +22,6 @@ from unsup3d.utils import get_mask
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 EPS = 1e-7
 
-
-
-EPS = 1e-7
-
 class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
         super(PhotoGeoAE, self).__init__()
@@ -60,7 +56,11 @@ class PhotoGeoAE(nn.Module):
         
 
     def get_photo_loss(self, img1, img2, conf, mask = None):
-        L1_loss = torch.abs(img1 - img2)
+        losses = torch.abs(img1 - img2)
+        num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
+        loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
+
+        '''
         losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
 
         if mask is not None:
@@ -69,6 +69,7 @@ class PhotoGeoAE(nn.Module):
         else:
             num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
             loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
+        '''
 
         return loss
 
@@ -180,10 +181,12 @@ class PhotoGeoAE(nn.Module):
         self.logger(losses, step)
         '''
 
+        '''
         if self.tot_loss.isnan().sum() != 0:
             assert(0)
         elif self.tot_loss.isinf().sum() != 0:
             assert(0)
+        '''
 
         return self.tot_loss
 
@@ -209,8 +212,8 @@ class PhotoGeoAE(nn.Module):
         '''
         all codes for visualization, intermediate outputs
         '''
-        def add_image_log(log_path, images, epoch):
-            img_grid = torchvision.utils.make_grid(images)
+        def add_image_log(log_path, images, epoch, normalize=True):
+            img_grid = torchvision.utils.make_grid(images, normalize=normalize)
             self.logger.add_image(log_path, img_grid, epoch)
 
         add_image_log('image_decomposition/depth', (self.depth -0.9)*5.0, epoch, False)

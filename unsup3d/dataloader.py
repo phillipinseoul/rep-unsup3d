@@ -10,8 +10,7 @@ import os.path as path
 MAX_PIX = 255
 setting_list = ['train','val','test']
 CelebA_PATH = '/root/unsup3d-rep/data/celeba'
-# BFM_PATH = '/root/unsup3d-rep/data/synface'
-BFM_PATH = 'data/synface'
+BFM_PATH = '/root/unsup3d-rep/data/synface'
 
 class CelebA(Dataset):
     def __init__(self, setting = "train", img_size = 64):
@@ -72,8 +71,6 @@ class BFM(Dataset):
 
         self.img_gt_pairs = img_gt_pairs
 
-        # print(f'length of img_gt_pairs: {len(self.img_gt_pairs)}')
-
     def __getitem__(self, idx):
         '''return both image and gt depth_map as tensor.'''
 
@@ -98,3 +95,4 @@ class BFM(Dataset):
     
     def __len__(self):
         return len(self.img_gt_pairs)
+        # return 64
