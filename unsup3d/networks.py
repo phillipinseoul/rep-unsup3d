@@ -10,7 +10,7 @@ from unsup3d.modules import Encoder, AutoEncoder, Conf_Conv
 
 # Image decompostion pipline
 class ImageDecomp(nn.Module):
-    def __init__(self, device,
+    def __init__(self, device, W, H,
                  depth_v, alb_v, light_v, view_v, use_conf):
         super(ImageDecomp,self).__init__()
         if depth_v == 'depth_v0':
@@ -23,6 +23,9 @@ class ImageDecomp(nn.Module):
             self.view_net = Encoder(cout=6).to(device)             # B x 4 x 1 x 1
 
         ''' TODO: additional networks '''
+        depth_pad = torch.zeros(1,H,W-4).to(device)
+        self.depth_border = nn.functional.pad(depth_pad, (2,2), mode = 'constant', value = 1.0)
+        self.border_depth = 0.7*1.1 + 0.3 * 0.9
 
         if use_conf:
             self.conf_net = Conf_Conv().to(device)
@@ -30,6 +33,9 @@ class ImageDecomp(nn.Module):
     def get_depth_map(self, input):
         res = self.depth_net(input)
         res = 1.0 + res/10.0
+
+        res = res*(1-self.depth_border) + self.depth_border *self.border_depth  # border clamping
+
         return res
     
     def get_albedo(self, input):

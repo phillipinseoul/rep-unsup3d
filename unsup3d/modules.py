@@ -167,5 +167,8 @@ class Conf_Conv(nn.Module):
         out = self.decoder_1(out)
         out_1 = self.out_1(out)
         out_2 = self.decoder_2(out)
+
+        if out_1.isnan().sum() != 0 or out_2.isnan().sum() != 0:
+            assert(0)
         
         return out_1, out_2

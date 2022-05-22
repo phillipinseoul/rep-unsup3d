@@ -5,6 +5,8 @@ in Photo-geometric Autoencoding pipeline
 
 import torch
 
+EPS = 1e-7
+
 class ImageFormation():
     def __init__(self, device, size=64, 
                     k_s_max=1.0, k_s_min=0.0, k_d_max=1.0, k_d_min=0.0):
@@ -41,7 +43,7 @@ class ImageFormation():
         c = torch.cat([x_grid, y_grid, depth_map], dim=1)
 
         d = torch.cross(v2 - c, v1 - c, dim=1)
-        normal_map = d / torch.sqrt(torch.sum(d ** 2, dim=1, keepdim=True))
+        normal_map = d / (torch.sqrt(torch.sum(d ** 2, dim=1, keepdim=True)) + EPS)
 
         return normal_map   
 

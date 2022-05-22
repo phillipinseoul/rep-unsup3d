@@ -1,10 +1,10 @@
 # trainer
 dataset: celeba
-num_epochs: 200
+num_epochs: 20000
 batch_size: 64
 learning_rate: 0.0001
 run_train: True
-exp_name: celeba_train_v0
+exp_name: celeba_train_v2_depth_mask
 exp_path: experiments/celeba_train
 chk_path: models/celeba_train
 
@@ -27,12 +27,12 @@ write_logs: true
 
 # visualize option
 plot_size: 256
-fig_plot_epoch: 3 
+fig_plot_epoch: 30 
 plot_num: 32
 
 
 # chkpt option
-save_epoch: 20
+save_epoch: 1000
 
 
 # load saved option

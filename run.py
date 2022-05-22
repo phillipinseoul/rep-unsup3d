@@ -7,7 +7,7 @@ from unsup3d import Trainer
 from tensorboardX import SummaryWriter
 
 import warnings
-#warnings.filterwarnings("error")
+warnings.filterwarnings("ignore")
 
 def run(args):
     # load yaml file
@@ -24,10 +24,16 @@ def run(args):
 if __name__ == "__main__":
     # set configurations
     parser = argparse.ArgumentParser()
-    parser.add_argument('--configs', help='Set configurations file path', type=str, default='configs/celeba_train_v0.yaml')
+    parser.add_argument(
+        '--configs', 
+        help='Set configurations file path', 
+        type=str, 
+        default='configs/celeba_train_v0.yaml'
+    )
     # parser.add_argument('--num_workers', help='Set number of workers', type=int, default=4)
     # parser.add_argument('--use_gpu', help='Set the usage of GPU', type=bool, default=True)
     '''TODO: add more arguments'''
     args = parser.parse_args()
 
+    
     run(args)

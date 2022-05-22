@@ -10,11 +10,21 @@ from tqdm import tqdm
 import time
 import os.path as path
 import os
+import random
+import numpy as np
 
 from unsup3d.model import PhotoGeoAE
 from unsup3d.dataloader import CelebA, BFM
 
 # initial configurations 
+random_seed = 0
+torch.manual_seed(random_seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
+np.random.seed(random_seed)
+random.seed(random_seed)
+torch.autograd.set_detect_anomaly(False)
+
 LR = 1e-4
 max_epoch = 200
 chk_PATH = './chk.pt'   # need to change later
@@ -125,7 +135,9 @@ class Trainer():
                 self.save_model(epch_loss)
 
             self.writer.add_scalar("Loss_epch/train", epch_loss, self.epoch)
-            # self.model.visualize(self.epoch)
+
+            if self.epoch % self.fig_epoch == 0:
+                self.model.visualize(self.epoch)
 
     def _train(self):
         '''train model (single epoch)'''
@@ -140,7 +152,7 @@ class Trainer():
             
             losses = self.model(inputs)
             loss = torch.mean(losses)
-            loss.backward()
+            loss.backward(retain_graph=True)
             self.optimizer.step()
 
             # calculate epch_loss
