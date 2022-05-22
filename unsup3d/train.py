@@ -152,6 +152,8 @@ class Trainer():
             else:
                 inputs = inputs.to(self.device)
             
+            self.optimizer.zero_grad()
+
             losses = self.model(inputs)
             loss = torch.mean(losses)
             loss.backward(retain_graph=True)

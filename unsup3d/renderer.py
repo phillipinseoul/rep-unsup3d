@@ -30,7 +30,6 @@ class RenderPipeline(nn.Module):
         self.center_depth = torch.cat([
             torch.zeros(1,2,1,1, dtype = torch.float32),
             center_depth], dim = 1).to(self.device)            # 1 x 3 x 1 x 1
-        
 
         self.render_min_depth = 0.1         # allow larger depth range on renderer, than clamp
         self.render_max_depth = 10.0        # allow larger depth range on renderer, than clamp
@@ -172,8 +171,8 @@ class RenderPipeline(nn.Module):
         )
 
         # allow extra margin
-        margin = (self.max_depth - self.min_depth)/2
-        org_depth = org_depth.clamp(min = self.min_depth-margin, max = self.max_depth+margin)
+        margin = (self.max_depth - self.min_depth) / 2
+        org_depth = org_depth.clamp(min = self.min_depth - margin, max = self.max_depth + margin)
         
         return org_depth.unsqueeze(1)
 
