@@ -14,7 +14,7 @@ class ImageDecomp(nn.Module):
                  depth_v, alb_v, light_v, view_v, use_conf):
         super(ImageDecomp,self).__init__()
         if depth_v == 'depth_v0':
-            self.depth_net = AutoEncoder(cout=1).to(device)        # B x 1 x W x H
+            self.depth_net = AutoEncoder(cout=1, no_activate = True).to(device)        # B x 1 x W x H
         if alb_v == 'alb_v0':
             self.alb_net = AutoEncoder(cout=3).to(device)          # B x 3 x W x H
         if light_v == 'light_v0':
@@ -31,7 +31,11 @@ class ImageDecomp(nn.Module):
             self.conf_net = Conf_Conv().to(device)
 
     def get_depth_map(self, input):
-        res = self.depth_net(input)
+        raw_res = self.depth_net(input)
+        # normalize
+        raw_res = raw_res - torch.mean(raw_res, dim = (1,2,3), keepdim=True)
+        res = raw_res.tanh()
+
         res = 1.0 + res/10.0
 
         res = res*(1-self.depth_border) + self.depth_border *self.border_depth  # border clamping

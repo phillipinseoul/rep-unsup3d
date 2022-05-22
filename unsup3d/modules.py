@@ -38,7 +38,7 @@ class Encoder(nn.Module):
 
 # network architecture for depth, albedo
 class AutoEncoder(nn.Module):
-    def __init__(self, cout):
+    def __init__(self, cout, no_activate = False):
         '''
         * depth: cout=1
         * albedo: cout=3
@@ -92,9 +92,11 @@ class AutoEncoder(nn.Module):
             nn.Conv2d(64, 64, kernel_size=5, stride=1, padding=2),
             nn.GroupNorm(16, 64),
             nn.ReLU(),
-            nn.Conv2d(64, cout, kernel_size=5, stride=1, padding=2),
-            nn.Tanh()
+            nn.Conv2d(64, cout, kernel_size=5, stride=1, padding=2)
         ]
+
+        if not no_activate:
+            decoder.append(nn.Tanh())
 
         self.encoder = nn.Sequential(*encoder)
         self.decoder = nn.Sequential(*decoder)

@@ -80,7 +80,7 @@ class PhotoGeoAE(nn.Module):
         losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
         if mask is not None:
             losses = losses * mask
-            loss = torch.sum(losses, dim = (1,2,3)) / torch.sum(mask, dim = (1,2,3))
+            loss = torch.sum(losses, dim = (1,2,3)) / (torch.sum(mask, dim = (1,2,3))+EPS)
         else:
             num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
             loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
@@ -143,7 +143,8 @@ class PhotoGeoAE(nn.Module):
         self.recon_output = org_img
         self.f_recon_output = f_org_img
 
-
+        self.org_depth = org_depth
+        self.f_org_depth = f_org_depth
 
         # Mask of loss
         mask_org_depth = (org_depth < (1.1 + 0.1)).float()
@@ -257,7 +258,8 @@ class PhotoGeoAE(nn.Module):
 
         add_image_log('to_debug/input_img', self.input, epoch, False)
         add_image_log('to_debug/depth_mask', self.mask_depth, epoch)
-
+        add_image_log('to_debug/org_depth', (self.org_depth - 0.8)*2.5, epoch, False)
+        add_image_log('to_debug/f_org_depth', (self.f_org_depth - 0.8)*2.5, epoch, False)
 
         print('normal value range:', self.normal.min().item(), self.normal.max().item())
         print('shading value range:', self.shading.min().item(), self.shading.max().item())
@@ -332,7 +334,7 @@ class PercepLoss(nn.Module):
             b, _, h, w = loss.shape
             
             re_mask = nn.functional.avg_pool2d(mask, kernel_size = (hm//h, wm//w), stride = (hm//h, wm//w)).expand_as(loss)
-            tot_loss = torch.sum(loss*re_mask, dim = (1,2,3)) / torch.sum(re_mask, dim = (1,2,3))
+            tot_loss = torch.sum(loss*re_mask, dim = (1,2,3)) / (torch.sum(re_mask, dim = (1,2,3))+EPS)
 
         else:
             num_cases = feat1.shape[2] * feat1.shape[3] * n_feat

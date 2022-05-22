@@ -83,7 +83,7 @@ class Trainer():
             self.datasets,
             batch_size= self.batch_size,
             shuffle=True,
-            num_workers=4,
+            num_workers=8,
             drop_last=True,         # (05/20, inhee) I'm not sure currently we can handle last epoch properly
         )
 
@@ -92,7 +92,7 @@ class Trainer():
                 self.val_datasets,
                 batch_size= self.batch_size,
                 shuffle=False,
-                num_workers=4,
+                num_workers=8,
                 drop_last=True,         # (05/20, inhee) I'm not sure currently we can handle last epoch properly
             )
         
@@ -110,13 +110,17 @@ class Trainer():
         '''define optimizer and scheduler'''
         self.optimizer = optims.Adam(
             params = self.model.parameters(),
-            lr = self.learning_rate
+            lr = self.learning_rate,
+            betas=(0.9, 0.999), 
+            #weight_decay=5e-4       # from author's code setting (05/22 inhee)
         )
 
+        '''
         self.scheduler = optims.lr_scheduler.LambdaLR(
             optimizer = self.optimizer,
             lr_lambda = lambda epoch: 0.95 ** epoch
         )
+        '''
 
         '''load_model and optimizer state'''
         if self.load_chk:
@@ -154,6 +158,7 @@ class Trainer():
             else:
                 inputs = inputs.to(self.device)
             
+            self.optimizer.zero_grad()
             losses = self.model(inputs)
             loss = torch.mean(losses)
             loss.backward(retain_graph=True)
@@ -167,7 +172,7 @@ class Trainer():
             self.writer.add_scalar("Loss_step/train", loss.detach().cpu().item(), self.step)
             self.model.loss_plot(self.step)
         
-        self.scheduler.step()
+        #self.scheduler.step()
         return epch_loss/cnt
 
     def load_model(self, PATH):

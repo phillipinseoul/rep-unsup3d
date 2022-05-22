@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import math
 from neural_renderer import Renderer
+from unsup3d.utils import *
 
 BATCH_SIZE = 16
 EPS = 1e-7
@@ -99,7 +100,7 @@ class RenderPipeline(nn.Module):
             [grid, torch.ones_like(canon_depth, dtype = torch.float32).to(canon_depth.device)], 
             dim=1)                  # B 3 W H
         
-        canon_pc = safe_matmul(self.K_inv, grid_3d) # B 3 W H
+        canon_pc = safe_matmul(grid_3d, self.K_inv.transpose(2,1)) # B 3 W H
         canon_pc = canon_pc * canon_depth                      # B 3 W H
 
         return canon_pc
@@ -128,7 +129,7 @@ class RenderPipeline(nn.Module):
 
         # first centeralize & rotate & relocate
         c_canon_pc = canon_pc - self.center_depth    # B 3 W H
-        org_pc = safe_matmul(self.R, c_canon_pc)     # B 3 W H
+        org_pc = safe_matmul(c_canon_pc, self.R.transpose(2,1))     # B 3 W H
         org_pc = org_pc + self.center_depth
         org_pc = org_pc + self.T
 
@@ -199,21 +200,20 @@ class RenderPipeline(nn.Module):
         grid_3d = torch.cat(
             [grid, torch.ones_like(org_depth, dtype = torch.float32).to(org_depth.device)], 
             dim=1)                      # B 3 W H
-        org_pc = safe_matmul(self.K_inv, grid_3d)
+        org_pc = safe_matmul(grid_3d, self.K_inv.transpose(2,1))
         org_pc = org_pc * org_depth
         
         canon_pc = org_pc - self.T                                  # B 3 W H
 
         # first centeralize & rotate & relocate
         c_canon_pc = canon_pc - self.center_depth
-        canon_pc = safe_matmul(self.R.transpose(1,2), c_canon_pc)   # B 3 W H, inv rotation == transpose
+        canon_pc = safe_matmul(c_canon_pc, self.R)   # B 3 W H, inv rotation == transpose
         canon_pc = canon_pc + self.center_depth
 
-        canon_pc = safe_matmul(self.K, canon_pc)
+
         canon_pc = canon_pc / (canon_pc[:,2:3,:,:] + EPS)
-
+        canon_pc = safe_matmul(canon_pc,self.K.transpose(2,1))
         
-
         warp_grid = canon_pc[:,0:2,:,:]                             # B 2 W H
         
         # change it to have value range -1 ~ 1
@@ -278,228 +278,11 @@ class RenderPipeline(nn.Module):
         org_img = self.get_org_image(warp_grid, canon_img)
 
         return org_img, org_depth
+
+
+
         
 
 ####################################################################
 # functions below here will be moved to utils later (05/13, inhee) #
 ####################################################################
-
-def deg2rad(deg):
-    return deg*math.pi/180
-
-def gen_grid(img):
-    '''
-    input:
-    - img: image or depth map, (B x () x W x H)
-    output:
-    - grid: tensor holding coordinate of pixel (B x 2 x W x H)
-
-    it makes tensor in same device of input img.
-    '''
-
-    if len(img.shape) != 4:
-        print("can't generate grid, it's dimension isn't 4")
-        print("input shape", img.shape)
-        assert(0)
-    
-    B, _ , W, H = img.shape
-
-    x_coord = torch.linspace(0, W-1, W, dtype = torch.float32)
-    y_coord = torch.linspace(0, H-1, H, dtype = torch.float32)
-
-    xx,yy = torch.meshgrid(x_coord, y_coord, indexing = 'ij')
-    xx = xx.unsqueeze(0).unsqueeze(0).repeat(B,1,1,1) # B x 1 x W x H
-    yy = yy.unsqueeze(0).unsqueeze(0).repeat(B,1,1,1) # B x 1 x W x H
-
-    return torch.cat([xx,yy], dim = 1).to(img.device)  # B x 2 x W x H
-
-
-def safe_matmul(first, second):
-    '''
-    input:
-    - first: first matrix to be multiplied
-    - second: second matrix to be multiplied
-    output:
-    - res: matrix multiplied results. (B x 3 x W x H)
-
-    one of matrix should be "3x3" and other should be "B x 3 x W x H"
-    Other input shapes would be asserted (05/13 inhee)
-    '''
-    # case handling. 
-    if len(first.shape) < 4 and len(second.shape) == 4:
-        first_is_3x3 = True
-
-        if second.shape[1] != 3:
-            print("improper shape")
-            print("first shape: ", first.shape)
-            print("second shape: ", second.shape)
-
-    elif len(first.shape)==4 and len(second.shape) < 4:
-        first_is_3x3 = False
-        
-        if first.shape[1] != 3:
-            print("improper shape")
-            print("first shape: ", first.shape)
-            print("second shape: ", second.shape)
-
-    else:
-        print("improper shape")
-        print("first shape: ", first.shape)
-        print("second shape: ", second.shape)
-        assert(0)
-
-    # device different case
-    if first.device != second.device:
-        print("different device")
-        assert(0)
-    
-
-    if first_is_3x3:
-        second_temp = second.reshape(second.shape[0], second.shape[1],-1)   # B x 3 x WH
-        
-        res = torch.matmul(first, second_temp)  # B x 3 x WH (matmul broadcasting)
-        res = res.reshape(second.shape[0], second.shape[1], second.shape[2], second.shape[3])
-
-    else:
-        first_temp = first.reshape(first.shape[0], first.shape[1], -1)  # B x 3 x WH
-        first_temp = first_temp.permute(0,2,1)                          # B x WH x 3
-        res = torch.matmul(first_temp, second)  # B x WH x 3
-        res = res.permute(0,2,1)                # B x 3 x WH
-        res = res.reshape(first.shape[0], first.shape[1], first.shape[2], first.shape[3])
-
-    return res
-
-
-def get_rot_mat(alpha, beta, gamma):
-    '''
-    input:
-    - alpha : rotation in xy plane (deg) (B x 1)
-    - beta : rotation in yz plane (deg) (B x 1)
-    - gamma : rotation in zx plane (deg) (B x 1)
-    ouptut:
-    - rot_mat: rotation matrix (B x 3 x 3)
-
-
-    ################################################# YOU NEED TO TEST IT WHETHER IT'S PROPER (05/13) #######
-    '''
-
-    # generate rotation matrix
-    device = alpha.device
-    a = alpha/180 * torch.pi
-    b = beta/180 * torch.pi
-    g = gamma/180 * torch.pi
-    
-    ## <rot_a>
-    ##
-    ## cos(alpha) -sin(alpha)   0
-    ## sin(alpha)  cos(alpha)   0
-    ##     0           0        1
-    ##
-    s_a = torch.sin(a)  # B x 1
-    c_a = torch.cos(a)  # B x 1
-    rot_a = torch.cat(
-        [
-            torch.stack([c_a, -s_a, torch.zeros_like(c_a, dtype=torch.float32).to(device)], dim = 2), # B x 1 x 3
-            torch.stack([s_a, c_a, torch.zeros_like(c_a, dtype=torch.float32).to(device)], dim = 2),  # B x 1 x 3
-            torch.stack([
-                torch.zeros_like(c_a, dtype = torch.float32),
-                torch.zeros_like(c_a, dtype = torch.float32),
-                torch.ones_like(c_a, dtype = torch.float32)
-            ], dim = 2).to(device)                                                      # B x 1 x 3  
-        ], dim = 1
-    )                                                                                                 # B x 3 x 3
-    ## <rot_b>
-    ##
-    ##     1         0          0
-    ##     0     cos(beta) -sin(beta)
-    ##     0     sin(beta)  cos(beta)
-    ##
-    s_b = torch.sin(b)  # B x 1
-    c_b = torch.cos(b)  # B x 1
-    rot_b = torch.cat(
-        [
-            torch.stack([
-                torch.ones_like(c_b, dtype = torch.float32),
-                torch.zeros_like(c_b, dtype = torch.float32),
-                torch.zeros_like(c_b, dtype = torch.float32)
-            ], dim = 2).to(device),                                                     # B x 1 x 3 
-            torch.stack([torch.zeros_like(c_b, dtype=torch.float32).to(device), c_b, -s_b], dim = 2), # B x 1 x 3
-            torch.stack([torch.zeros_like(c_b, dtype=torch.float32).to(device), s_b, c_b], dim = 2)  # B x 1 x 3
-        ], dim = 1
-    )  
-    ## <rot_g>
-    ##
-    ##  cos(gamma)    0      sin(gamma)
-    ##      0         1          0
-    ## -sin(gamma)    0      cos(gamma)
-    ##
-    s_g = torch.sin(g)  # B x 1
-    c_g = torch.cos(g)  # B x 1
-    rot_g = torch.cat(
-        [
-            torch.stack([c_g, torch.zeros_like(c_a, dtype=torch.float32).to(device), s_g], dim = 2),  # B x 1 x 3
-            torch.stack([
-                torch.zeros_like(c_a, dtype = torch.float32),
-                torch.ones_like(c_a, dtype = torch.float32),
-                torch.zeros_like(c_a, dtype = torch.float32)
-            ], dim = 2).to(device),                                                     # B x 1 x 3 
-            torch.stack([-s_a, torch.zeros_like(c_a, dtype=torch.float32).to(device), c_g], dim = 2)  # B x 1 x 3
-        ], dim = 1
-    )  
-    rot_mat = torch.matmul(torch.matmul(rot_a,rot_b),rot_g)
-
-    return rot_mat
-
-
-def get_faces(B, W, H):
-    '''
-    input:
-    - B, W, H: size of input shape
-    output:
-    - faces : faces (B x 2(W-1)(H-1) x 3)
-
-    it returns faces
-    
-    divide faces like this (following tessellation in paper)
-    ####
-    ####  (i-1, j) *  *  *  *   (i,j)           
-    ####      *   *      R        *
-    ####      *       *           *
-    ####      *   L       *       *
-    ####  (i-1, j-1) *  *  *  * (i,j-1)     
-    ####
-    
-    faces are consists of coordinate(order) of 3 vertices
-    order is counter clock-wise (right-thumb's rule)
-    (05/14 inhee)
-    '''
-
-    faces = torch.arange(W*H, dtype = torch.int32)
-    faces_2D = faces.reshape(W,H)   # W x H
-
-    face_L = torch.stack(
-        [
-            faces_2D[0:W-1, 1:H],   # (W-1) x (H-1)
-            faces_2D[0:W-1, 0:H-1], # (W-1) x (H-1)
-            faces_2D[1:W, 0:H-1]    # (W-1) x (H-1)
-        ],
-        dim = -1
-    )   # (W-1) x (H-1) x 3
-    face_R = torch.stack(
-        [
-            faces_2D[0:W-1, 1:H],   # (W-1) x (H-1)
-            faces_2D[1:W, 0:H-1],   # (W-1) x (H-1)
-            faces_2D[1:W, 1:H]      # (W-1) x (H-1)
-        ],
-        dim = -1
-    )   # (W-1) x (H-1) x 3
-
-    faces = torch.cat(
-        [
-            face_L.reshape(-1, 3),
-            face_R.reshape(-1, 3)
-        ],
-        dim = 0
-    )   # 2(W-1)(H-1) x 3
-
-    return faces.unsqueeze(0).repeat(B, 1, 1)      # B x 2(W-1)(H-1) x 3
