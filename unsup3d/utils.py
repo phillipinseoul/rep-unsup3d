@@ -4,6 +4,7 @@ in Photo-geometric Autoencoding pipeline
 '''
 
 import torch
+import torch.nn.functional as F
 import math
 
 EPS = 1e-7
@@ -33,6 +34,7 @@ class ImageFormation():
         self.k_d_max = k_d_max
         self.k_d_min = k_d_min
         self.device = device
+    
     
     def depth_to_normal(self, depth_map):
         '''
@@ -83,9 +85,12 @@ class ImageFormation():
 
         # Get light direction (l_dir)
         ones = torch.ones(B, 1, device=self.device)
-        l_dir = torch.cat((l_x, l_y, ones), 1)
-        l_dir /= (l_x ** 2 + l_y ** 2 + 1) ** 0.5   # l_dir: B x 3
+        l_dir = torch.cat((l_x, l_y, ones), dim=1) / ((l_x ** 2 + l_y ** 2 + 1) ** 0.5)     # l_dir: B x 3
+        l_dir = l_dir.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, W, H)
 
+        shading_map = F.relu(torch.sum(l_dir * normal_map, dim=1, keepdim=True)) * k_d + k_s
+
+        '''
         # Compute shading value for each pixel
         shading_map = torch.zeros(B, 1, W, H, device=self.device)
 
@@ -96,8 +101,13 @@ class ImageFormation():
                 inner = torch.sum(inner, dim=1, keepdim=True)
                 sh_ij = k_s + k_d * torch.relu(inner)
                 shading_map[:, :, i, j] = sh_ij
+        '''
 
         return shading_map
+
+        
+        self.canon_diffuse_shading = (self.normal_map * self.canon_light_d.view(-1, 1, 1, 3)).sum(3).clamp(min=0).unsqueeze(1)
+        canon_shading = self.canon_light_a.view(-1, 1, 1, 1) + self.canon_light_b.view(-1, 1, 1, 1) * self.canon_diffuse_shading
 
     def alb_to_canon(self, albedo, shading_map):
         '''
