@@ -78,7 +78,7 @@ class PhotoGeoAE(nn.Module):
 
 
         num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
-        loss = -torch.sum(losses, dim=(1, 2, 3)) / num_cases
+        loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
 
         return loss
 
@@ -308,7 +308,7 @@ class PercepLoss(nn.Module):
         loss = feat_L1 / (2*conf**2 + EPS) + torch.log(conf + EPS)
         
         num_cases = feat1.shape[2] * feat1.shape[3] * n_feat
-        tot_loss = -torch.sum(loss, dim=(1, 2, 3)) / num_cases
+        tot_loss = torch.sum(loss, dim=(1, 2, 3)) / num_cases
 
         return tot_loss
         
