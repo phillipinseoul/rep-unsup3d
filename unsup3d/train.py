@@ -139,7 +139,9 @@ class Trainer():
                 self.save_model(epch_loss)
 
             self.writer.add_scalar("Loss_epch/train", epch_loss, self.epoch)
-            self.model.visualize(self.epoch)
+
+            if self.epoch % self.fig_epoch == 0:
+                self.model.visualize(self.epoch)
 
     def _train(self):
         '''train model (single epoch)'''

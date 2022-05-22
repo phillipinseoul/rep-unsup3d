@@ -7,7 +7,7 @@ from unsup3d import Trainer
 from tensorboardX import SummaryWriter
 
 import warnings
-#warnings.filterwarnings("error")
+warnings.filterwarnings("ignore")
 
 def run(args):
     # load yaml file
