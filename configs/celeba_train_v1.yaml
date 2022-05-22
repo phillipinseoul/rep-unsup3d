@@ -37,4 +37,4 @@ save_epoch: 20
 
 # load saved option
 load_chk: true
-load_path: experiments/celeba_train/celeba_train_v0_05_21__13_29/models/best.pt
+load_path: experiments/celeba_train/celeba_train_v0_05_21__16_17/models/best.pt

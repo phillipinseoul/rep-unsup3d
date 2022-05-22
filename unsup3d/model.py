@@ -3,6 +3,7 @@ from locale import normalize
 from cv2 import norm
 from os.path import join
 import os
+import math
 import torch
 import torch.nn as nn
 import torchvision
@@ -10,6 +11,7 @@ import torchvision.models as pre_model
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 from datetime import datetime
+from pytictoc import TicToc
 
 from unsup3d.networks import ImageDecomp
 from unsup3d.utils import ImageFormation
@@ -18,6 +20,9 @@ from unsup3d.metrics import BFM_Metrics
 from unsup3d.utils import get_mask
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+EPS = 1e-7
+
+
 
 class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
@@ -66,8 +71,11 @@ class PhotoGeoAE(nn.Module):
     def get_photo_loss(self, img1, img2, conf):
         L1_loss = torch.abs(img1 - img2)
 
-        losses = torch.log(1/torch.sqrt(2 * torch.pi * conf ** 2)) \
-            * torch.exp(-torch.sqrt(torch.Tensor([2]).to(device)) * L1_loss / conf)
+        #losses = -torch.log(math.sqrt(2 * math.pi) * conf + EPS) \
+        #    * torch.exp(-torch.sqrt(torch.Tensor([2]).to(device)) * L1_loss / (conf+EPS))
+
+        losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
+
 
         num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
         loss = -torch.sum(losses, dim=(1, 2, 3)) / num_cases
@@ -131,6 +139,7 @@ class PhotoGeoAE(nn.Module):
         self.f_recon_output = f_org_img
 
         '''calculate loss'''
+        
         self.L1_loss = torch.abs(self.recon_output - input).mean()
         self.percep_loss = self.percep(input, self.recon_output, self.conf_percep) # (b_size)
         self.photo_loss = self.get_photo_loss(input, self.recon_output, self.conf)  # (b_size)
@@ -174,6 +183,11 @@ class PhotoGeoAE(nn.Module):
         }
         self.logger(losses, step)
         '''
+
+        if self.tot_loss.isnan().sum() != 0:
+            assert(0)
+        elif self.tot_loss.isinf().sum() != 0:
+            assert(0)
 
 
         return self.tot_loss
@@ -289,8 +303,9 @@ class PercepLoss(nn.Module):
 
         feat_L1 = torch.abs(feat1 - feat2)
 
-        loss = torch.log(1/torch.sqrt(2 * torch.pi * conf ** 2)) \
-            * torch.exp(-feat_L1**2/(2*conf**2))
+        #loss = -torch.log(math.sqrt(2 * math.pi) * conf + EPS) \
+        #    * torch.exp(-feat_L1**2/(2*conf**2+EPS))
+        loss = feat_L1 / (2*conf**2 + EPS) + torch.log(conf + EPS)
         
         num_cases = feat1.shape[2] * feat1.shape[3] * n_feat
         tot_loss = -torch.sum(loss, dim=(1, 2, 3)) / num_cases

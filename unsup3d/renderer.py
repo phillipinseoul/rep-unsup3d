@@ -4,7 +4,7 @@ import math
 from neural_renderer import Renderer
 
 BATCH_SIZE = 16
-EPS = 1e-21
+EPS = 1e-7
 
 IS_DEBUG = True
 
