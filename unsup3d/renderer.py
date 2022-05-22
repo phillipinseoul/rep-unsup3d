@@ -264,10 +264,11 @@ class RenderPipeline(nn.Module):
         (05/14 inhee)
         '''
         rotates = views[:,0:3]            # B x 3, (-1.0  ~ 1.0)
-        #rotates = rotates * 60.0        # B x 3, (-60.0 ~ 60.0)
-        rotates = rotates * 180.0 / math.pi
+        rotates = rotates * 60.0        # B x 3, (-60.0 ~ 60.0)
+        #rotates = rotates * 180.0 / math.pi
         trans = views[:,3:6]                # B x 3, (-1.0  ~ 1.0)
-        #trans = trans / 10.0                # B x 3, (-0.1  ~ 0.1)
+        trans = trans / 10.0                # B x 3, (-0.1  ~ 0.1)
+        trans[:,2:3]= 0                       # z-translation range (0)
 
 
         canon_pc = self.canon_depth_to_3d(canon_depth)

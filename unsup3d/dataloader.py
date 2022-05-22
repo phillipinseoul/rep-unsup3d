@@ -33,6 +33,7 @@ class CelebA(Dataset):
         the output will be scaled as '0~1' as torch.float32
         '''
         img = cv2.imread(path.join(self.path, self.file_list[idx]))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_img = torch.tensor(re_img, dtype = torch.float32)
         re_img = re_img.permute(2,0,1)                  # 3 x H x W
@@ -41,7 +42,7 @@ class CelebA(Dataset):
         return re_img
 
     def __len__(self):
-        return 32*10
+        return 32*2
         #return len(self.file_list)
 
 
