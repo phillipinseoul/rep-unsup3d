@@ -19,6 +19,8 @@ from unsup3d.utils import get_mask
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+EPS = 1e-7
+
 class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
         super(PhotoGeoAE, self).__init__()
@@ -33,20 +35,6 @@ class PhotoGeoAE(nn.Module):
         self.use_gt_depth = configs['use_gt_depth']
         self.use_conf = configs['use_conf']
         self.b_size = configs['batch_size']
-        
-        '''
-        # Inhee (05/21) I use different path definition here.
-
-        if configs['write_logs']:
-            log_dir = join(configs['exp_path'], 'logs', 'exp_' + datetime.now().strftime("%H%M%S"))
-            # log_dir = join(configs['exp_path'], 'logs')
-            # os.makedirs(log_dir)
-            self.logger = SummaryWriter(str(log_dir))
-            # self.logger = SummaryWriter(join(configs['exp_path'], 'logs', datetime.now().strftime("%H:%M:%S")))
-        
-        
-        '''
-
 
         '''initialize image decomposition networks'''
         self.imgDecomp = ImageDecomp(device=device,
@@ -65,12 +53,9 @@ class PhotoGeoAE(nn.Module):
 
     def get_photo_loss(self, img1, img2, conf):
         L1_loss = torch.abs(img1 - img2)
-
-        losses = torch.log(1/torch.sqrt(2 * torch.pi * conf ** 2)) \
-            * torch.exp(-torch.sqrt(torch.Tensor([2]).to(device)) * L1_loss / conf)
-
+        losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
         num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
-        loss = -torch.sum(losses, dim=(1, 2, 3)) / num_cases
+        loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
 
         return loss
 
@@ -84,7 +69,7 @@ class PhotoGeoAE(nn.Module):
 
         '''for BFM datasets, separate gt_depth'''
         if self.use_gt_depth:
-            input, gt_depth = input
+            input, self.gt_depth = input
 
         '''image decomposition'''
         self.input = input
@@ -144,7 +129,7 @@ class PhotoGeoAE(nn.Module):
 
         '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
         if self.use_gt_depth:
-            bfm_metrics = BFM_Metrics(org_depth, gt_depth)
+            bfm_metrics = BFM_Metrics(org_depth, self.gt_depth)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
@@ -174,8 +159,6 @@ class PhotoGeoAE(nn.Module):
         }
         self.logger(losses, step)
         '''
-
-
         return self.tot_loss
 
     def logger(self, losses, step):
@@ -196,14 +179,12 @@ class PhotoGeoAE(nn.Module):
                     step
                 )
         
-
-
     def visualize(self, epoch):
         '''
         all codes for visualization, intermediate outputs
         '''
         def add_image_log(log_path, images, epoch):
-            img_grid = torchvision.utils.make_grid(images, normalize=True)
+            img_grid = torchvision.utils.make_grid(images)
             self.logger.add_image(log_path, img_grid, epoch)
 
         add_image_log('image_decomposition/depth', self.depth, epoch)
@@ -227,7 +208,13 @@ class PhotoGeoAE(nn.Module):
         add_image_log('image_decomposition/f_shading', self.f_shading, epoch)
         add_image_log('image_decomposition/f_canon_img', self.f_canon_img, epoch)
 
-        add_image_log('imafe_decomposition/input_img', self.input, epoch)
+        add_image_log('image_decomposition/input_img', self.input, epoch)
+
+        if self.use_gt_depth:
+            add_image_log('image_decomposition/gt_depth', self.gt_depth, epoch)
+
+        add_image_log('reconstruction/recon_output', self.recon_output, epoch)
+        add_image_log('reconstruction/f_recon_output', self.f_recon_output, epoch)
 
 
     def loss_plot(self, epoch):
@@ -242,13 +229,17 @@ class PhotoGeoAE(nn.Module):
         self.logger.add_scalar('losses/tot_loss', torch.mean(self.tot_loss), epoch)
         self.logger.add_scalar('losses/L1_loss', self.L1_loss, epoch)
 
+        '''
         if self.use_gt_depth:
+            
             self.logger.add_scalar('losses/side_error', self.side_error, epoch)
             self.logger.add_scalar('losses/mad_error', self.mad_error, epoch)
+        '''
 
 
     def set_logger(self, writer):
         self.logger = writer
+
     def save_results(self):
         pass
 
@@ -285,15 +276,11 @@ class PercepLoss(nn.Module):
         feat2 = self.relu3_3(n_img2)
 
         n_feat = feat1.shape[1]
-        # print("Feature dim:", n_feat)
 
         feat_L1 = torch.abs(feat1 - feat2)
-
-        loss = torch.log(1/torch.sqrt(2 * torch.pi * conf ** 2)) \
-            * torch.exp(-feat_L1**2/(2*conf**2))
-        
+        loss = feat_L1**2 / (2 * conf**2 + EPS) + torch.log(conf + EPS)
         num_cases = feat1.shape[2] * feat1.shape[3] * n_feat
-        tot_loss = -torch.sum(loss, dim=(1, 2, 3)) / num_cases
+        tot_loss = torch.sum(loss, dim=(1, 2, 3)) / num_cases
 
         return tot_loss
         

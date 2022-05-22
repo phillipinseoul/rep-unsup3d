@@ -33,6 +33,7 @@ class CelebA(Dataset):
         the output will be scaled as '0~1' as torch.float32
         '''
         img = cv2.imread(path.join(self.path, self.file_list[idx]))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_img = torch.tensor(re_img, dtype = torch.float32)
         re_img = re_img.permute(2,0,1)                  # 3 x H x W
@@ -71,11 +72,15 @@ class BFM(Dataset):
 
         self.img_gt_pairs = img_gt_pairs
 
+        # print(f'length of img_gt_pairs: {len(self.img_gt_pairs)}')
+
     def __getitem__(self, idx):
         '''return both image and gt depth_map as tensor.'''
 
         '''resize image'''
+        # img = Image.open(path.join(self.img_path, self.img_gt_pairs[idx][0]))
         img = cv2.imread(path.join(self.img_path, self.img_gt_pairs[idx][0]))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_img = torch.tensor(re_img, dtype = torch.float32)
         re_img = re_img.permute(2, 0, 1)                    # 3 x H x W
