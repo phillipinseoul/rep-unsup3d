@@ -27,7 +27,7 @@ write_logs: true
 
 # visualize option
 plot_size: 256
-fig_plot_epoch: 30 
+fig_plot_epoch: 15 
 plot_num: 32
 
 
