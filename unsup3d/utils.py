@@ -88,22 +88,11 @@ class ImageFormation():
         l_dir = torch.cat((l_x, l_y, ones), dim=1) / ((l_x ** 2 + l_y ** 2 + 1) ** 0.5)     # l_dir: B x 3
         l_dir = l_dir.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, W, H)
 
-        shading_map = F.relu(torch.sum(l_dir * normal_map, dim=1, keepdim=True)) * k_d + k_s
 
-        '''
-        # Compute shading value for each pixel
-        shading_map = torch.zeros(B, 1, W, H, device=self.device)
+        shading_map = F.relu(torch.sum(l_dir * normal_map, dim=1, keepdim=True)) * k_d.view(B,1,1,1) + k_s.view(B,1,1,1)
 
-        for i in range(1, W - 1):
-            for j in range(1, H - 1):
-                # Get inner product of light direction and normal
-                inner = l_dir * normal_map[:, :, i, j]
-                inner = torch.sum(inner, dim=1, keepdim=True)
-                sh_ij = k_s + k_d * torch.relu(inner)
-                shading_map[:, :, i, j] = sh_ij
-        '''
+        return shading_map*2. -1.
 
-        return shading_map
 
         
         self.canon_diffuse_shading = (self.normal_map * self.canon_light_d.view(-1, 1, 1, 3)).sum(3).clamp(min=0).unsqueeze(1)

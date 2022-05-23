@@ -3,7 +3,7 @@ run train/test/demo
 '''
 import argparse
 import yaml
-from unsup3d import Trainer
+from unsup3d.train import Trainer
 from tensorboardX import SummaryWriter
 
 import warnings
