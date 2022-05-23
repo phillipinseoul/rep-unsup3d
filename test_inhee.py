@@ -366,10 +366,20 @@ def test_0514(test_util = True):
 
 def test_utils(depth, light, albedo, shading, normal, canon):
     ImgForm = ImageFormation(device = torch.device("cpu"))
+    
+    RDR = RenderPipeline(b_size = depth.shape[0])
+    print(depth.shape)
+    print(normal.shape)
+    au_my_normal = RDR.depth2normal_author(depth.cuda())
     my_normal = ImgForm.depth_to_normal(depth)
-    my_shading = ImgForm.normal_to_shading(my_normal, light.squeeze())
+    print(my_normal.shape)
+    my_shading = ImgForm.normal_to_shading(normal.permute(0,3,1,2), light.squeeze())
     my_canon = ImgForm.alb_to_canon(albedo, my_shading)
 
+
+    compare_plot('./debug/normal.png', my_normal, au_my_normal.detach().cpu())
+
+    
     # compare normal
     print("my normal: ", my_normal.shape, ", min: ", my_normal.min(),", max: ", my_normal.max())
     print("org normal: ", normal.shape, ", min: ", normal.min(),", max: ", normal.max())
@@ -536,7 +546,7 @@ def plot_3d(depth, fig_ind):
 
 
 if __name__ == '__main__':
-    #test_0514(test_util=True)
-    test_0514(test_util=False)
+    test_0514(test_util=True)
+    #test_0514(test_util=False)
 
 
