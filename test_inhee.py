@@ -364,11 +364,10 @@ def test_0514(test_util = True):
     else:
         test_render(b_depth, b_canon_img, b_view)
 
-
 def test_utils(depth, light, albedo, shading, normal, canon):
-    ImgForm = ImageFormation()
+    ImgForm = ImageFormation(device = torch.device("cpu"))
     my_normal = ImgForm.depth_to_normal(depth)
-    my_shading = ImgForm.normal_to_shading(my_normal, light)
+    my_shading = ImgForm.normal_to_shading(my_normal, light.squeeze())
     my_canon = ImgForm.alb_to_canon(albedo, my_shading)
 
     # compare normal
@@ -396,8 +395,16 @@ def test_render(depth, img, view):
         canon_img = img.cuda(),
         views = view.cuda()
     )
+    org_img = org_img * (org_depth != 1.2)
     print("org image: ", org_img.shape, ", min: ", org_img.min(),", max: ", org_img.max())
     print("org depth: ", org_depth.shape, ", min: ", org_depth.min(),", max: ", org_depth.max())
+    compare_plot(
+        './debug/depth.png',
+        img, 
+        depth, 
+        title1='canon_img', 
+        title2='depth'
+    )
     compare_plot(
         './debug/renderer.png',
         org_img.detach().cpu(), 
@@ -406,8 +413,8 @@ def test_render(depth, img, view):
         title2='depth'
     )
     
-    plot_3d(depth[0,0,:,:].detach().cpu(), 2)
-    plot_3d(org_depth[0,0,:,:].detach().cpu(), 3)
+    #plot_3d(depth[0,0,:,:].detach().cpu(), 4)
+    #plot_3d(org_depth[0,0,:,:].detach().cpu(), 5)
     
 
 

@@ -98,11 +98,31 @@ class SimpleAE(nn.Module):
         shading = self.imgForm.normal_to_shading(normal, light)
         canon_img = self.imgForm.alb_to_canon(albedo, shading)
 
+        toImage = transforms.ToPILImage()
+
+        canon_img_1 = canon_img.squeeze(0)
+        canon_img_1 = toImage(canon_img_1).convert('RGB') # 3 x W x H
+        plt.imshow(canon_img_1)
+        plt.title('canon_img_1')
+        plt.savefig('canon_img_1.png')
+
+        normal = normal.squeeze(0)
+        normal = toImage(normal).convert('RGB') # 3 x W x H
+        plt.imshow(normal)
+        plt.title('normal')
+        plt.savefig('normal.png')
+
         org_img, org_depth = self.render(
             canon_depth=depth.cuda(), 
             canon_img=canon_img.cuda(), 
             views=view.cuda()
         )
+
+        org_img_1 = org_img.squeeze(0)
+        org_img_1 = toImage(org_img_1).convert('RGB') # 3 x W x H
+        plt.imshow(org_img_1)
+        plt.title('org_img_1')
+        plt.savefig('org_img_1.png')
 
         return org_img, org_depth
 
@@ -130,10 +150,34 @@ def test_0518():
     plt.imshow(mask_img)
     plt.title('masked')
     plt.savefig('masked_erode.png')
+
+def test_0522():
+    transform = transforms.Compose([
+        transforms.Resize((64, 64)),
+        transforms.ToTensor()
+    ])
+
+    depth = Image.open('data/synface/test/depth/000008_depth_1_1.png').convert('L')
+    depth = transform(depth)
+    depth = depth.unsqueeze(0)
+
+    imageForm = ImageFormation(device='cpu')
+
+    toImage = transforms.ToPILImage()
+
+    normal = imageForm.depth_to_normal(depth)
+    print(f'max: {torch.max(normal)}, min: {torch.min(normal)}')
+
+    normal = normal.squeeze(0)
+    normal = toImage(normal).convert('RGB') # 3 x W x H
+    plt.imshow(normal)
+    plt.title('normal')
+    plt.savefig('normal.png')
     
 if __name__ == '__main__':
     test_0517()
     # test_0518()
+    # test_0522()
 
 
 

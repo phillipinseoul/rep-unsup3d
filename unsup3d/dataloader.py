@@ -94,5 +94,5 @@ class BFM(Dataset):
         return re_img, re_depth
     
     def __len__(self):
-        return len(self.img_gt_pairs)
-        # return 64
+        # return len(self.img_gt_pairs)
+        return 64
