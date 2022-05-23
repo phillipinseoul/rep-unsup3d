@@ -38,20 +38,6 @@ class PhotoGeoAE(nn.Module):
         self.use_gt_depth = configs['use_gt_depth']
         self.use_conf = configs['use_conf']
         self.b_size = configs['batch_size']
-        
-        '''
-        # Inhee (05/21) I use different path definition here.
-
-        if configs['write_logs']:
-            log_dir = join(configs['exp_path'], 'logs', 'exp_' + datetime.now().strftime("%H%M%S"))
-            # log_dir = join(configs['exp_path'], 'logs')
-            # os.makedirs(log_dir)
-            self.logger = SummaryWriter(str(log_dir))
-            # self.logger = SummaryWriter(join(configs['exp_path'], 'logs', datetime.now().strftime("%H:%M:%S")))
-        
-        
-        '''
-
 
         '''initialize image decomposition networks'''
         self.imgDecomp = ImageDecomp(
@@ -72,18 +58,20 @@ class PhotoGeoAE(nn.Module):
         
 
     def get_photo_loss(self, img1, img2, conf, mask = None):
-        L1_loss = torch.abs(img1 - img2)
+        losses = torch.abs(img1 - img2)
+        num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
+        loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
 
-        #losses = -torch.log(math.sqrt(2 * math.pi) * conf + EPS) \
-        #    * torch.exp(-torch.sqrt(torch.Tensor([2]).to(device)) * L1_loss / (conf+EPS))
-
+        '''
         losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
+
         if mask is not None:
             losses = losses * mask
             loss = torch.sum(losses, dim = (1,2,3)) / (torch.sum(mask, dim = (1,2,3))+EPS)
         else:
             num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
             loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
+        '''
 
         return loss
 
@@ -98,7 +86,7 @@ class PhotoGeoAE(nn.Module):
         
         '''for BFM datasets, separate gt_depth'''
         if self.use_gt_depth:
-            input, gt_depth = input
+            input, self.gt_depth = input
 
         '''normalize the input (-1, 1)'''
         input = input * 2.-1.
@@ -164,7 +152,6 @@ class PhotoGeoAE(nn.Module):
         self.mask_depth = mask_depth
 
         '''calculate loss'''
-        
         self.L1_loss = torch.abs(self.recon_output - input).mean()
         self.percep_loss = self.percep(input, self.recon_output, self.conf_percep, mask_depth) # (b_size)
         self.photo_loss = self.get_photo_loss(input, self.recon_output, self.conf, mask_depth)  # (b_size)
@@ -178,7 +165,7 @@ class PhotoGeoAE(nn.Module):
 
         '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
         if self.use_gt_depth:
-            bfm_metrics = BFM_Metrics(org_depth, gt_depth)
+            bfm_metrics = BFM_Metrics(org_depth, self.gt_depth)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
@@ -209,11 +196,12 @@ class PhotoGeoAE(nn.Module):
         self.logger(losses, step)
         '''
 
+        '''
         if self.tot_loss.isnan().sum() != 0:
             assert(0)
         elif self.tot_loss.isinf().sum() != 0:
             assert(0)
-
+        '''
 
         return self.tot_loss
 
@@ -235,13 +223,11 @@ class PhotoGeoAE(nn.Module):
                     step
                 )
         
-
-
     def visualize(self, epoch):
         '''
         all codes for visualization, intermediate outputs
         '''
-        def add_image_log(log_path, images, epoch, normalize = True):
+        def add_image_log(log_path, images, epoch, normalize=True):
             img_grid = torchvision.utils.make_grid(images, normalize=normalize)
             self.logger.add_image(log_path, img_grid, epoch)
 
@@ -268,6 +254,14 @@ class PhotoGeoAE(nn.Module):
 
         add_image_log('to_debug/input_img', self.input, epoch, False)
         add_image_log('to_debug/depth_mask', self.mask_depth, epoch)
+
+        add_image_log('image_decomposition/input_img', self.input, epoch)
+
+        if self.use_gt_depth:
+            add_image_log('image_decomposition/gt_depth', self.gt_depth, epoch)
+
+        add_image_log('reconstruction/recon_output', self.recon_output, epoch)
+        add_image_log('reconstruction/f_recon_output', self.f_recon_output, epoch)
         add_image_log('to_debug/org_depth', (self.org_depth - 0.8)*2.5, epoch, False)
         add_image_log('to_debug/f_org_depth', (self.f_org_depth - 0.8)*2.5, epoch, False)
 
@@ -287,13 +281,17 @@ class PhotoGeoAE(nn.Module):
         self.logger.add_scalar('losses/tot_loss', torch.mean(self.tot_loss), epoch)
         self.logger.add_scalar('losses/L1_loss', self.L1_loss, epoch)
 
+        '''
         if self.use_gt_depth:
+            
             self.logger.add_scalar('losses/side_error', self.side_error, epoch)
             self.logger.add_scalar('losses/mad_error', self.mad_error, epoch)
+        '''
 
 
     def set_logger(self, writer):
         self.logger = writer
+
     def save_results(self):
         pass
 
@@ -331,12 +329,8 @@ class PercepLoss(nn.Module):
         feat2 = self.relu3_3(n_img2)
 
         n_feat = feat1.shape[1]
-        # print("Feature dim:", n_feat)
 
-        feat_Loss = (feat1 - feat2)**2
-
-        #loss = -torch.log(math.sqrt(2 * math.pi) * conf + EPS) \
-        #    * torch.exp(-feat_L1**2/(2*conf**2+EPS))
+        feat_Loss = (feat1 - feat2) ** 2
         loss = feat_Loss / (2*conf**2 + EPS) + torch.log(conf + EPS)
 
         if mask is not None:

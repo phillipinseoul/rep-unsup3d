@@ -1,7 +1,7 @@
 # trainer
 dataset: bfm
 num_epochs: 200
-batch_size: 32
+batch_size: 64
 learning_rate: 0.0001
 run_train: true
 exp_name: bfm_train_v0
@@ -11,7 +11,7 @@ chk_path: models/bfm_train
 img_size: 64
 
 # light configs
-lambda_p: 0.5
+lambda_p: 0.1
 lambda_f: 1.0
 
 # network versions
@@ -23,5 +23,18 @@ view_v: view_v0
 use_gt_depth: true
 use_conf: true
 write_logs: true
+
+# visualize option
+plot_size: 256
+fig_plot_epoch: 3 
+plot_num: 32
+
+# chkpt option
+save_epoch: 20
+
+
+# load saved option
+load_chk: false
+# load_path: experiments/bfm_train/celeba_train_v0_05_21__13_29/models/best.pt
 
 

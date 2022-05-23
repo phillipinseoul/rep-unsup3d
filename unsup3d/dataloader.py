@@ -10,8 +10,7 @@ import os.path as path
 MAX_PIX = 255
 setting_list = ['train','val','test']
 CelebA_PATH = '/root/unsup3d-rep/data/celeba'
-# BFM_PATH = '/root/unsup3d-rep/data/synface'
-BFM_PATH = 'data/synface'
+BFM_PATH = '/root/unsup3d-rep/data/synface'
 
 class CelebA(Dataset):
     def __init__(self, setting = "train", img_size = 64):
@@ -76,7 +75,9 @@ class BFM(Dataset):
         '''return both image and gt depth_map as tensor.'''
 
         '''resize image'''
+        # img = Image.open(path.join(self.img_path, self.img_gt_pairs[idx][0]))
         img = cv2.imread(path.join(self.img_path, self.img_gt_pairs[idx][0]))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_img = torch.tensor(re_img, dtype = torch.float32)
         re_img = re_img.permute(2, 0, 1)                    # 3 x H x W
@@ -93,4 +94,5 @@ class BFM(Dataset):
         return re_img, re_depth
     
     def __len__(self):
-        return len(self.img_gt_pairs)
+        # return len(self.img_gt_pairs)
+        return 64
