@@ -89,7 +89,7 @@ class ImageFormation():
 
         shading_map = F.relu(torch.sum(l_dir * normal_map, dim=1, keepdim=True)) * k_d.view(B,1,1,1) + k_s.view(B,1,1,1)
 
-        return shading_map*2. -1.
+        return shading_map
 
     def alb_to_canon(self, albedo, shading_map):
         '''
@@ -102,7 +102,7 @@ class ImageFormation():
         # calculate the canonical view
         canon_view = albedo * shading_map
 
-        return canon_view
+        return canon_view * 2. -1.
 
 
 def get_mask(depth):

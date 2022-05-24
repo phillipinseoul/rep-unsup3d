@@ -259,33 +259,41 @@ class PhotoGeoAE(nn.Module):
         add_image_log('image_decomposition/f_depth', (self.f_depth-0.9)*5.0, epoch, False)
 
         add_image_log('image_decomposition/normal', self.normal, epoch)
-        add_image_log('image_decomposition/shading', self.shading, epoch)
+        add_image_log('image_decomposition/shading', self.shading/2., epoch, False)
         add_image_log('image_decomposition/canon_img', self.canon_img, epoch, False)
 
         add_image_log('image_decomposition/f_normal', self.f_normal, epoch)
-        add_image_log('image_decomposition/f_shading', self.f_shading, epoch)
+        add_image_log('image_decomposition/f_shading', self.f_shading/2., epoch, False)
         add_image_log('image_decomposition/f_canon_img', self.f_canon_img, epoch, False)
 
-        add_image_log('to_debug/input_img', self.input, epoch, False)
+        add_image_log('to_debug/recon_img', (self.recon_output+1.)/2., epoch, False)
+        add_image_log('to_debug/f_recon_img', (self.f_recon_output+1.)/2., epoch, False)
+        add_image_log('to_debug/input_img', (self.input+1.)/2., epoch, False)
         add_image_log('to_debug/depth_mask', self.mask_depth, epoch)
         add_image_log('to_debug/org_depth', (self.org_depth - 0.8)*2.5, epoch, False)
         add_image_log('to_debug/f_org_depth', (self.f_org_depth - 0.8)*2.5, epoch, False)
 
+        print('views angles: \n', (self.view.detach().cpu()[0:5, 0:3] * 60.))
+        print('views trans: \n', (self.view.detach().cpu()[0:5, 3:] * 0.1))
+        print('lights: \n', (self.light.detach().cpu()[0:5,0:2] + 1.)/2.)
         print('normal value range:', self.normal.min().item(), self.normal.max().item())
         print('shading value range:', self.shading.min().item(), self.shading.max().item())
         print('canon_img value range:', self.canon_img.min().item(), self.canon_img.max().item())
+        print('recon img value range: ', self.recon_output.min().item(), self.recon_output.max().item())
 
     def loss_plot(self, epoch):
-        self.logger.add_scalar('losses/percep_loss', torch.mean(self.percep_loss), epoch)
+        self.logger.add_scalar('losses/percep_loss', torch.mean(self.percep_loss*self.lambda_p), epoch)
         self.logger.add_scalar('losses/photo_loss', torch.mean(self.photo_loss), epoch)
         self.logger.add_scalar('losses/org_loss', torch.mean(self.org_loss), epoch)
 
-        self.logger.add_scalar('losses/f_percep_loss', torch.mean(self.f_percep_loss), epoch)
+        self.logger.add_scalar('losses/f_percep_loss', torch.mean(self.f_percep_loss*self.lambda_p), epoch)
         self.logger.add_scalar('losses/f_photo_loss', torch.mean(self.f_photo_loss), epoch)
         self.logger.add_scalar('losses/flip_loss', torch.mean(self.flip_loss), epoch)
 
         self.logger.add_scalar('losses/tot_loss', torch.mean(self.tot_loss), epoch)
         self.logger.add_scalar('losses/L1_loss', self.L1_loss, epoch)
+
+
 
         if self.use_gt_depth:
             self.logger.add_scalar('losses/side_error', self.side_error, epoch)
@@ -324,6 +332,9 @@ class PercepLoss(nn.Module):
         - loss: perceptual loss (real number)
         calculate PercepLoss based on L1 distance & confidence
         '''
+        img1 = (img1+1.)/2.
+        img2 = (img2+1.)/2.
+        
         n_img1 = self.transforms(img1)
         n_img2 = self.transforms(img2)
 

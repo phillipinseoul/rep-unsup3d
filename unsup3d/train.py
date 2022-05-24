@@ -69,7 +69,7 @@ class Trainer():
         # self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
         self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
         self.save_epoch = configs['save_epoch']
-        self.fig_epoch = configs['fig_plot_epoch']
+        self.fig_step = configs['fig_plot_step']
 
         '''implement dataloader'''
         if configs['dataset'] == "celeba":
@@ -112,7 +112,7 @@ class Trainer():
             params = self.model.parameters(),
             lr = self.learning_rate,
             betas=(0.9, 0.999), 
-            #weight_decay=5e-4       # from author's code setting (05/22 inhee)
+            weight_decay=5e-4       # from author's code setting (05/22 inhee)
         )
 
         '''
@@ -144,8 +144,7 @@ class Trainer():
 
             self.writer.add_scalar("Loss_epch/train", epch_loss, self.epoch)
 
-            if self.epoch % self.fig_epoch == 0:
-                self.model.visualize(self.epoch)
+            
 
     def _train(self):
         '''train model (single epoch)'''
@@ -166,11 +165,15 @@ class Trainer():
 
             # calculate epch_loss
             epch_loss += loss.detach().cpu()
-            cnt += 1
-            self.step += 1
-
+            
             self.writer.add_scalar("Loss_step/train", loss.detach().cpu().item(), self.step)
             self.model.loss_plot(self.step)
+
+            if self.step % self.fig_step == 0:
+                self.model.visualize(self.step)
+
+            cnt += 1
+            self.step += 1
         
         #self.scheduler.step()
         return epch_loss/cnt
