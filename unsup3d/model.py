@@ -58,11 +58,9 @@ class PhotoGeoAE(nn.Module):
         
 
     def get_photo_loss(self, img1, img2, conf, mask = None):
-        losses = torch.abs(img1 - img2)
-        num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
-        loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
+        L1_loss = torch.abs(img1 - img2)
 
-        '''
+        
         losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
 
         if mask is not None:
@@ -71,7 +69,7 @@ class PhotoGeoAE(nn.Module):
         else:
             num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
             loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
-        '''
+        
 
         return loss
 
