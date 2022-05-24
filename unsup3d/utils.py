@@ -26,8 +26,7 @@ class ImageFormation():
             [0, 0, 1]], dtype = torch.float32)              
         self.K_inv = torch.linalg.inv(self.K)               # 3x3 matrix
         self.K = self.K.unsqueeze(0).to(device)
-
-
+ 
         self.img_size = size
         self.k_s_max = k_s_max
         self.k_s_min = k_s_min
@@ -91,12 +90,8 @@ class ImageFormation():
 
         shading_map = F.relu(torch.sum(l_dir * normal_map, dim=1, keepdim=True)) * k_d.view(B,1,1,1) + k_s.view(B,1,1,1)
 
-        return shading_map*2. -1.
-
-
-        
-        self.canon_diffuse_shading = (self.normal_map * self.canon_light_d.view(-1, 1, 1, 3)).sum(3).clamp(min=0).unsqueeze(1)
-        canon_shading = self.canon_light_a.view(-1, 1, 1, 1) + self.canon_light_b.view(-1, 1, 1, 1) * self.canon_diffuse_shading
+        # return shading_map*2. -1.
+        return shading_map
 
     def alb_to_canon(self, albedo, shading_map):
         '''
@@ -109,7 +104,8 @@ class ImageFormation():
         # calculate the canonical view
         canon_view = albedo * shading_map
 
-        return canon_view
+        # return canon_view
+        return canon_view *2-1
 
 
 def get_mask(depth):
@@ -128,12 +124,7 @@ def get_mask(depth):
     mask_erode = (mask_avg > 0.8) * ones
 
     return mask_erode
-
-
-
-
-
-
+ 
 
 def deg2rad(deg):
     return deg*math.pi/180
