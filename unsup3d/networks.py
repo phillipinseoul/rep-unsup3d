@@ -6,8 +6,6 @@ import torch
 
 from unsup3d.modules import Encoder, AutoEncoder, Conf_Conv
 
-
-
 # Image decompostion pipline
 class ImageDecomp(nn.Module):
     def __init__(self, device, W, H,

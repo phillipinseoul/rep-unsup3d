@@ -5,7 +5,6 @@ import pstats
 import torch
 import torch.optim as optims
 from torch.utils.data import DataLoader
-#from torch.utils.tensorboard import SummaryWriter
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 import time
@@ -17,6 +16,7 @@ import numpy as np
 from unsup3d.model import PhotoGeoAE
 from unsup3d.dataloader import CelebA, BFM
 
+# initial configurations 
 random_seed = 0
 torch.manual_seed(random_seed)
 torch.backends.cudnn.deterministic = True
@@ -25,7 +25,6 @@ np.random.seed(random_seed)
 random.seed(random_seed)
 torch.autograd.set_detect_anomaly(False)
 
-# initially, 
 LR = 1e-4
 max_epoch = 200
 chk_PATH = './chk.pt'   # need to change later
@@ -42,7 +41,6 @@ class Trainer():
         self.is_train = configs['run_train']
         self.load_chk = configs['load_chk']
 
-        
         if self.load_chk:
             self.load_path = configs['load_path']
         else:
@@ -51,7 +49,6 @@ class Trainer():
         self.epoch = 0
         self.step = 0
         self.best_loss = 1e10
-
         self.configs = configs
 
         '''path relevant'''
@@ -63,21 +60,21 @@ class Trainer():
         self.save_path = path.join(self.exp_path, 'models')
         os.makedirs(self.save_path, exist_ok=True)
         self.best_path = path.join(self.save_path, 'best.pt')
-        
 
         '''logger setting'''
-        # self.writer = SummaryWriter('runs/fashion_mnist_experiment_1')
         self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
         self.save_epoch = configs['save_epoch']
         self.fig_step = configs['fig_plot_step']
+
+        print(f'logs stored at {self.exp_path}')
 
         '''implement dataloader'''
         if configs['dataset'] == "celeba":
             self.datasets = CelebA(setting = 'train')
             self.val_datasets = CelebA(setting = 'val')
         elif configs['dataset'] == "bfm":
-            self.datasets = BFM()
-            self.val_datasets = None
+            self.datasets = BFM(setting = 'train')
+            self.val_datasets = BFM(setting = 'val')
 
         self.dataloader = DataLoader(
             self.datasets,
@@ -96,7 +93,6 @@ class Trainer():
                 drop_last=True,         # (05/20, inhee) I'm not sure currently we can handle last epoch properly
             )
         
-
         '''select GPU'''
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -118,7 +114,7 @@ class Trainer():
         '''
         self.scheduler = optims.lr_scheduler.LambdaLR(
             optimizer = self.optimizer,
-            lr_lambda = lambda epoch: 0.95 ** epoch
+            lr_lambda = lambda epoch: 0.95 ** epoch,
         )
         '''
 
@@ -130,7 +126,7 @@ class Trainer():
     def train(self):
         init_epch = self.epoch
         for epch in range(init_epch, self.max_epoch):
-            epch_loss = self._train()
+            epch_loss = self._train()       # train a single epoch
             self.epoch = epch
 
             if epch_loss < self.best_loss:
@@ -142,7 +138,7 @@ class Trainer():
                 # save periodically
                 self.save_model(epch_loss)
 
-            self.writer.add_scalar("Loss_epch/train", epch_loss, self.epoch)
+            self.writer.add_scalar("loss_epch/train", epch_loss, self.epoch)
 
             
 
@@ -158,6 +154,7 @@ class Trainer():
                 inputs = inputs.to(self.device)
             
             self.optimizer.zero_grad()
+
             losses = self.model(inputs)
             loss = torch.mean(losses)
             loss.backward(retain_graph=True)
@@ -206,8 +203,6 @@ class Trainer():
 
         print("mode saved as ", PATH)
 
-
-
     def _val(self):
         '''validate model and plot testing images'''
         self.model.eval()
@@ -216,9 +211,6 @@ class Trainer():
             for i, inputs in tqdm(enumerate(self.val_dataloader, 0)):
                 inputs = inputs.to(self.device)
                 losses = self.model(inputs)
-                
-
-
 
     def _test(self):
         '''test model'''
