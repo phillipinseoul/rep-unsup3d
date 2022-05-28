@@ -1,18 +1,18 @@
 # trainer
 dataset: celeba
-num_epochs: 20
+num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
 run_train: True
-exp_name: celeba_train_0524_v1
+exp_name: celeba_train_0525_add_random_flip_with_changed_initialize
 exp_path: experiments/celeba_train
 chk_path: models/celeba_train
 
 img_size: 64
 
 # light configs
-lambda_p: 0.5
-lambda_f: 1.0
+lambda_p: 1.0
+lambda_f: 0.5
 
 # network versions
 depth_v: depth_v0
@@ -27,7 +27,7 @@ write_logs: true
 
 # visualize option
 plot_size: 256
-fig_plot_step: 1000
+fig_plot_step: 100
 plot_num: 32
 
 

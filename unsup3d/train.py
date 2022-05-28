@@ -19,17 +19,19 @@ from unsup3d.dataloader import CelebA, BFM
 # initial configurations 
 random_seed = 0
 torch.manual_seed(random_seed)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
+
 np.random.seed(random_seed)
 random.seed(random_seed)
 torch.autograd.set_detect_anomaly(False)
 
-LR = 1e-4
-max_epoch = 200
-chk_PATH = './chk.pt'   # need to change later
+if torch.cuda.is_available():
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.enabled = True
+    torch.cuda.manual_seed_all(random_seed)
 
 is_debug = False
+
 
 class Trainer():
     def __init__(self, configs, model = None): # model is for debug(05/09)
@@ -157,7 +159,7 @@ class Trainer():
 
             losses = self.model(inputs)
             loss = torch.mean(losses)
-            loss.backward(retain_graph=True)
+            loss.backward()
             self.optimizer.step()
 
             # calculate epch_loss

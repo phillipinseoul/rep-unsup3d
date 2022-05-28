@@ -27,7 +27,6 @@ class ImageFormation():
         self.K_inv = torch.linalg.inv(self.K)               # 3x3 matrix
         self.K = self.K.unsqueeze(0).to(device)
 
-
         self.img_size = size
         self.k_s_max = k_s_max
         self.k_s_min = k_s_min
@@ -85,7 +84,7 @@ class ImageFormation():
 
         # Get light direction (l_dir)
         ones = torch.ones(B, 1, device=self.device)
-        l_dir = torch.cat((l_x, l_y, ones), dim=1) / ((l_x ** 2 + l_y ** 2 + 1) ** 0.5)     # l_dir: B x 3
+        l_dir = torch.cat((l_x, l_y, ones), dim=1) / torch.sqrt(l_x ** 2 + l_y ** 2 + 1)     # l_dir: B x 3
         l_dir = l_dir.unsqueeze(-1).unsqueeze(-1).repeat(1, 1, W, H)
 
 
