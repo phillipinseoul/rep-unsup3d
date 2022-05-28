@@ -1,6 +1,7 @@
 import torch
 import torchvision
 import torchvision.transforms as transforms
+import numpy as np
 from PIL import Image
 import os
 import cv2
@@ -38,11 +39,14 @@ class CelebA(Dataset):
         re_img = re_img.permute(2,0,1)                  # 3 x H x W
         re_img /= MAX_PIX                               # change value range 0~1
 
+        if np.random.rand() > 0.5:
+            re_img = transforms.functional.hflip(re_img)
+
         return re_img
 
     def __len__(self):
-        return 32*2
-        #return len(self.file_list)
+        #return 32*2
+        return len(self.file_list)
 
 
 class BFM(Dataset):
@@ -101,6 +105,11 @@ class BFM(Dataset):
         re_depth = torch.tensor(re_depth, dtype = torch.float32).unsqueeze(-1)
         re_depth = re_depth.permute(2, 0, 1)                  # 1 x H x W
         re_depth /= MAX_PIX                                   # change value range 0~1
+
+
+        if np.random.rand() > 0.5:
+            re_img = transforms.functional.hflip(re_img)
+            re_depth = transforms.functional.hflip(re_depth)
         
         return re_img, re_depth
     

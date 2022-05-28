@@ -7,13 +7,15 @@ from unsup3d.utils import *
 BATCH_SIZE = 16
 EPS = 1e-7
 
+DEPTH_ALLOW_MARGIN = 0.2        # originally, it's 0.1
 IS_DEBUG = True
+USE_WIDER_DEPTH = False
 
 class RenderPipeline(nn.Module):
     def __init__(self, device = torch.device("cuda"), b_size = BATCH_SIZE, args = None):
         '''
         this part should be received from argument "args"
-        We need to update it! (05/13 inhee)
+        We need to update it! (05/13 inhee) 
         '''
         super(RenderPipeline, self).__init__()
         W = 64
@@ -66,15 +68,15 @@ class RenderPipeline(nn.Module):
             K=self.K,                           # vertices projecting matrix
             R=R,                                # object rotating matrix (can also apply in method-call)
             t=T,                                # object translating matrix (can also apply in method-call)
-            dist_coeffs=None,                   # vector of distortion coefficients, default : None 
+            #dist_coeffs=None,                   # vector of distortion coefficients, default : None 
             orig_size=W,                        # original size of image captured by the camera 
             near = self.render_min_depth,              # minmum depth
             far = self.render_max_depth,               # maximum depth
             light_intensity_ambient=1.0, 
             light_intensity_directional=0.,
-            light_color_ambient=[1,1,1], 
-            light_color_directional=[1,1,1],
-            light_direction=[0,1,0]
+            #light_color_ambient=[1,1,1], 
+            #light_color_directional=[1,1,1],
+            #light_direction=[0,1,0]
         )
 
         # define faces here
@@ -172,7 +174,10 @@ class RenderPipeline(nn.Module):
         )
 
         # allow extra margin
-        margin = (self.max_depth - self.min_depth) / 2
+        if USE_WIDER_DEPTH:
+            margin = (self.max_depth - self.min_depth)
+        else:
+            margin = (self.max_depth - self.min_depth) / 2
         org_depth = org_depth.clamp(min = self.min_depth - margin, max = self.max_depth + margin)
         
         return org_depth.unsqueeze(1)

@@ -1,18 +1,18 @@
 # trainer
 dataset: celeba
-num_epochs: 200
+num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
 run_train: True
-exp_name: celeba_train_v1_load
+exp_name: celeba_train_v1_load_saved_wo_expand
 exp_path: experiments/celeba_train
 chk_path: models/celeba_train
 
 img_size: 64
 
 # light configs
-lambda_p: 0.5
-lambda_f: 1.0
+lambda_p: 1.0
+lambda_f: 0.5
 
 # network versions
 depth_v: depth_v0
@@ -24,17 +24,15 @@ use_gt_depth: false
 use_conf: true
 write_logs: true
 
-
 # visualize option
 plot_size: 256
-fig_plot_epoch: 3 
+fig_plot_step: 100
 plot_num: 32
 
-
 # chkpt option
-save_epoch: 20
+save_epoch: 10
 
 
 # load saved option
 load_chk: true
-load_path: experiments/celeba_train/celeba_train_v0_05_21__16_17/models/best.pt
+load_path: /root/unsup3d-rep/experiments/celeba_train/celeba_train_0524_v1_05_24__05_50/models/best.pt

@@ -19,17 +19,19 @@ from unsup3d.dataloader import CelebA, BFM
 # initial configurations 
 random_seed = 0
 torch.manual_seed(random_seed)
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
+
 np.random.seed(random_seed)
 random.seed(random_seed)
 torch.autograd.set_detect_anomaly(False)
 
-LR = 1e-4
-max_epoch = 200
-chk_PATH = './chk.pt'   # need to change later
+if torch.cuda.is_available():
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.enabled = True
+    torch.cuda.manual_seed_all(random_seed)
 
 is_debug = False
+
 
 class Trainer():
     def __init__(self, configs, model = None): # model is for debug(05/09)
@@ -64,7 +66,7 @@ class Trainer():
         '''logger setting'''
         self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
         self.save_epoch = configs['save_epoch']
-        self.fig_epoch = configs['fig_plot_epoch']
+        self.fig_step = configs['fig_plot_step']
 
         print(f'logs stored at {self.exp_path}')
 
@@ -110,7 +112,7 @@ class Trainer():
             params = self.model.parameters(),
             lr = self.learning_rate,
             betas=(0.9, 0.999), 
-            #weight_decay=5e-4       # from author's code setting (05/22 inhee)
+            weight_decay=5e-4       # from author's code setting (05/22 inhee)
         )
 
         '''
@@ -142,8 +144,7 @@ class Trainer():
 
             self.writer.add_scalar("loss_epch/train", epch_loss, self.epoch)
 
-            if self.epoch % self.fig_epoch == 0:
-                self.model.visualize(self.epoch)
+            
 
     def _train(self):
         '''train model (single epoch)'''
@@ -160,19 +161,20 @@ class Trainer():
 
             losses = self.model(inputs)
             loss = torch.mean(losses)
-            loss.backward(retain_graph=True)
+            loss.backward()
             self.optimizer.step()
 
             # calculate epch_loss
             epch_loss += loss.detach().cpu()
-            cnt += 1
-            self.step += 1
-
-            self.writer.add_scalar("loss_step/train", loss.detach().cpu().item(), self.step)
+            
+            self.writer.add_scalar("Loss_step/train", loss.detach().cpu().item(), self.step)
             self.model.loss_plot(self.step)
 
-            if i % 50 == 0:
+            if self.step % self.fig_step == 0:
                 self.model.visualize(self.step)
+
+            cnt += 1
+            self.step += 1
         
         #self.scheduler.step()
         return epch_loss/cnt

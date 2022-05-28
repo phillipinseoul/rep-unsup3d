@@ -84,7 +84,7 @@ class AutoEncoder(nn.Module):
             nn.GroupNorm(16, 64),
             nn.ReLU(),
 
-            nn.Upsample(scale_factor=2),
+            nn.Upsample(scale_factor=2, mode = 'nearest'),
             
             nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
             nn.GroupNorm(16, 64),

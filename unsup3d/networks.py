@@ -42,7 +42,7 @@ class ImageDecomp(nn.Module):
     
     def get_albedo(self, input):
         res = self.alb_net(input)
-        res = (res + 1.0)/ 2
+        res = (res + 1.)/ 2.
         return res
 
     def get_light(self, input):
