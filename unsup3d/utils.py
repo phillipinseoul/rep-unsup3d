@@ -93,10 +93,6 @@ class ImageFormation():
         return shading_map
 
 
-        
-        self.canon_diffuse_shading = (self.normal_map * self.canon_light_d.view(-1, 1, 1, 3)).sum(3).clamp(min=0).unsqueeze(1)
-        canon_shading = self.canon_light_a.view(-1, 1, 1, 1) + self.canon_light_b.view(-1, 1, 1, 1) * self.canon_diffuse_shading
-
     def alb_to_canon(self, albedo, shading_map):
         '''
         - input:
@@ -127,12 +123,7 @@ def get_mask(depth):
     mask_erode = (mask_avg > 0.8) * ones
 
     return mask_erode
-
-
-
-
-
-
+ 
 
 def deg2rad(deg):
     return deg*math.pi/180

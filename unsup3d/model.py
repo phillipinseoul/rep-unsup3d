@@ -21,7 +21,7 @@ from unsup3d.utils import get_mask
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 EPS = 1e-7
-author_test = True
+author_test = False
 
 
 class PhotoGeoAE(nn.Module):
@@ -59,7 +59,6 @@ class PhotoGeoAE(nn.Module):
 
     def get_photo_loss(self, img1, img2, conf, mask = None):
         L1_loss = torch.abs(img1 - img2)
-
         
         losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
 
@@ -70,6 +69,7 @@ class PhotoGeoAE(nn.Module):
             num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
             loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
         
+
         return loss
 
 
@@ -81,8 +81,9 @@ class PhotoGeoAE(nn.Module):
         implement pipeline here
         '''
 
+        
+        '''for BFM datasets, separate gt_depth (05/23 yuseung)'''
 
-        '''for BFM datasets, separate gt_depth'''
         if self.use_gt_depth:
             input, self.gt_depth = input
 
@@ -170,10 +171,12 @@ class PhotoGeoAE(nn.Module):
         self.tot_loss = self.org_loss + self.lambda_f * self.flip_loss
 
         '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
+        '''
         if self.use_gt_depth:
             bfm_metrics = BFM_Metrics(org_depth, self.gt_depth)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
+        '''
 
         '''
         if plot_interms:
@@ -264,8 +267,10 @@ class PhotoGeoAE(nn.Module):
 
         add_image_log('image_decomposition/input_img', self.input, epoch)
 
+        '''
         if self.use_gt_depth:
             add_image_log('image_decomposition/gt_depth', self.gt_depth, epoch)
+        '''
 
         add_image_log('reconstruction/recon_output', self.recon_output, epoch)
         add_image_log('reconstruction/f_recon_output', self.f_recon_output, epoch)
