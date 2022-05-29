@@ -83,7 +83,6 @@ class BFM(Dataset):
         gt_depth = cv2.imread(path.join(self.gt_path, self.img_gt_pairs[idx][1]))
 
         try:
-            # img = cv2.imread(path.join(self.img_path, self.img_gt_pairs[idx][0]))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             re_depth = cv2.resize(gt_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
         except:
@@ -95,17 +94,10 @@ class BFM(Dataset):
         re_img /= MAX_PIX                                   # change value range 0~1
 
         '''resize gt depth map'''
-        # try:
-        #     gt_depth = cv2.imread(path.join(self.gt_path, self.img_gt_pairs[idx][1]))
-        #     re_depth = cv2.resize(gt_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
-        # except:
-        #     return None
-
         re_depth = cv2.cvtColor(re_depth, cv2.COLOR_BGR2GRAY)
         re_depth = torch.tensor(re_depth, dtype = torch.float32).unsqueeze(-1)
         re_depth = re_depth.permute(2, 0, 1)                  # 1 x H x W
         re_depth /= MAX_PIX                                   # change value range 0~1
-
 
         if np.random.rand() > 0.5:
             re_img = transforms.functional.hflip(re_img)
@@ -114,5 +106,5 @@ class BFM(Dataset):
         return re_img, re_depth
     
     def __len__(self):
-        # return len(self.img_gt_pairs)
-        return 64 * 10
+        return len(self.img_gt_pairs)
+        # return 64 * 10

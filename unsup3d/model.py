@@ -171,12 +171,10 @@ class PhotoGeoAE(nn.Module):
         self.tot_loss = self.org_loss + self.lambda_f * self.flip_loss
 
         '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
-        '''
         if self.use_gt_depth:
             bfm_metrics = BFM_Metrics(org_depth, self.gt_depth)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
-        '''
 
         '''
         if plot_interms:
