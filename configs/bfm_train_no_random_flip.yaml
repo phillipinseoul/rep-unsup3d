@@ -4,7 +4,7 @@ num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
 run_train: true
-exp_name: bfm_train_v0
+exp_name: bfm_train_no_random_flip
 exp_path: experiments/bfm_train_no_random_flip
 chk_path: models/bfm_train
 

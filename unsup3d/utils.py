@@ -4,6 +4,7 @@ in Photo-geometric Autoencoding pipeline
 '''
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import math
 
@@ -24,7 +25,7 @@ class ImageFormation():
             [f, 0, c_u],
             [0, f, c_v],
             [0, 0, 1]], dtype = torch.float32)              
-        self.K_inv = torch.linalg.inv(self.K)               # 3x3 matrix
+        self.K_inv = torch.linalg.inv(self.K).unsqueeze(0).to(device)               # 3x3 matrix
         self.K = self.K.unsqueeze(0).to(device)
 
         self.img_size = size
