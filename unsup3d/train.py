@@ -84,6 +84,7 @@ class Trainer():
             shuffle=True,
             num_workers=8,
             drop_last=True,         # (05/20, inhee) I'm not sure currently we can handle last epoch properly
+            collate_fn=collate_fn,
         )
 
         if self.val_datasets is not None:
@@ -93,6 +94,7 @@ class Trainer():
                 shuffle=False,
                 num_workers=8,
                 drop_last=True,         # (05/20, inhee) I'm not sure currently we can handle last epoch properly
+                collate_fn=collate_fn,
             )
         
         '''select GPU'''
@@ -217,3 +219,12 @@ class Trainer():
     def _test(self):
         '''test model'''
         pass
+
+# handling exceptions in DataLoader __getitem__ (05/23 yuseung)
+# ref: https://github.com/pytorch/pytorch/issues/1137#issuecomment-618286571
+
+def collate_fn(batch):
+    filtered = list(filter(lambda x: x is not None, batch))
+    filtered = torch.utils.data.dataloader.default_collate(filtered)
+    
+    return filtered
