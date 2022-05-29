@@ -267,6 +267,7 @@ class RenderPipeline(nn.Module):
 
         (05/14 inhee)
         '''
+        views = views.squeeze()
         rotates = views[:,0:3]            # B x 3, (-1.0  ~ 1.0)
         rotates = rotates * 60.0        # B x 3, (-60.0 ~ 60.0)
         #rotates = rotates * 180.0 / math.pi

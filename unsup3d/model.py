@@ -155,6 +155,9 @@ class PhotoGeoAE(nn.Module):
         mask_depth = mask_depth.detach()
         self.mask_depth = mask_depth
 
+        self.recon_output = self.recon_output * self.mask_depth
+        self.f_recon_output = self.f_recon_output * self.mask_depth         # (added 05/29 inhee) it would affect the percep loss only.
+
         '''calculate loss'''
         self.L1_loss = torch.abs(self.recon_output - input).mean()
         self.effective_L1_loss = (torch.abs(self.recon_output-input)*self.mask_depth).sum()/self.mask_depth.sum()
@@ -303,6 +306,9 @@ class PhotoGeoAE(nn.Module):
 
         self.logger.add_scalar('debug/diffusion_light_mean', ((self.light.detach().cpu()[:,1:2] + 1.)/2.).mean(), epoch)
         self.logger.add_scalar('debug/diffusion_light_std', ((self.light.detach().cpu()[:,1:2] + 1.)/2.).std(), epoch)
+
+        self.logger.add_scalar('debug/view angles (abs mean)', (self.view.detach().cpu()[:, 0:3] * 60.).abs().mean(), epoch)
+        self.logger.add_scalar('debug/view ranss (abs mean)', (self.view.detach().cpu()[:, 3:5] * 0.1).abs().mean(), epoch)
         
         if self.use_gt_depth:
             self.logger.add_scalar('losses/side_error', self.side_error, epoch)

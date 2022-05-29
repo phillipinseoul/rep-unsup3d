@@ -38,7 +38,7 @@ class CelebA(Dataset):
         re_img = torch.tensor(re_img, dtype = torch.float32)
         re_img = re_img.permute(2,0,1)                  # 3 x H x W
         re_img /= MAX_PIX                               # change value range 0~1
-
+        
         if np.random.rand() > 0.5:
             re_img = transforms.functional.hflip(re_img)
 
