@@ -4,7 +4,7 @@ num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
 run_train: True
-exp_name: celeba_train_0525_add_random_flip_with_changed_initialize
+exp_name: celeba_train_0529_chnaged_percep_loss
 exp_path: experiments/celeba_train
 chk_path: models/celeba_train
 
