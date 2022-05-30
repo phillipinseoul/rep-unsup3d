@@ -3,6 +3,7 @@ Define each network for the Photo-geometric Autoencoding pipeline.
 '''
 import torch.nn as nn
 import torch
+import torch.optim as optims
 
 from unsup3d.modules import Encoder, AutoEncoder, Conf_Conv
 
@@ -23,20 +24,18 @@ class ImageDecomp(nn.Module):
         ''' TODO: additional networks '''
         depth_pad = torch.zeros(1,H,W-4).to(device)
         self.depth_border = nn.functional.pad(depth_pad, (2,2), mode = 'constant', value = 1.0)
-        self.border_depth = 0.7*1.1 + 0.3 * 0.9
+        self.border_depth = 0.7 * 1.1 + 0.3 * 0.9
 
         if use_conf:
             self.conf_net = Conf_Conv().to(device)
 
     def get_depth_map(self, input):
         raw_res = self.depth_net(input)
-        # normalize
-        raw_res = raw_res - torch.mean(raw_res, dim = (1,2,3), keepdim=True)
+        raw_res = raw_res - torch.mean(raw_res, dim = (1,2,3), keepdim=True)        # normalize
         res = raw_res.tanh()
 
-        res = 1.0 + res/10.0
-
-        res = res*(1-self.depth_border) + self.depth_border *self.border_depth  # border clamping
+        res = 1.0 + res / 10.0
+        res = res * (1 - self.depth_border) + self.depth_border * self.border_depth  # border clamping
 
         return res
     

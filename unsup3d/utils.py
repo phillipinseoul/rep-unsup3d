@@ -311,8 +311,7 @@ def get_faces(B, W, H):
     order is counter clock-wise (right-thumb's rule)
     (05/14 inhee)
     '''
-
-    faces = torch.arange(W*H, dtype = torch.int32)
+    faces = torch.arange(W * H, dtype = torch.int32)
     faces_2D = faces.reshape(W,H)   # W x H
 
     face_L = torch.stack(

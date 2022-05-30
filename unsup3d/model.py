@@ -21,8 +21,6 @@ from unsup3d.utils import get_mask
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 EPS = 1e-7
-author_test = False
-
 
 class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
@@ -59,7 +57,6 @@ class PhotoGeoAE(nn.Module):
 
     def get_photo_loss(self, img1, img2, conf, mask = None):
         L1_loss = torch.abs(img1 - img2)
-        
         losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
 
         if mask is not None:
@@ -69,9 +66,7 @@ class PhotoGeoAE(nn.Module):
             num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
             loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
         
-
         return loss
-
 
 
     def forward(self, input):
@@ -80,10 +75,8 @@ class PhotoGeoAE(nn.Module):
         - input: (Bx3xHxW), preprocessed on dataloader as H=W=64
         implement pipeline here
         '''
-
         
         '''for BFM datasets, separate gt_depth (05/23 yuseung)'''
-
         if self.use_gt_depth:
             input, self.gt_depth = input
 
@@ -113,10 +106,7 @@ class PhotoGeoAE(nn.Module):
 
         '''implement some pipeline'''
         # unflipped case
-        if author_test:
-            self.normal = self.render.depth2normal_author(self.depth)
-        else:
-            self.normal = self.imgForm.depth_to_normal(self.depth)                  # B x 3 x W x H
+        self.normal = self.imgForm.depth_to_normal(self.depth)                  # B x 3 x W x H
         self.shading = self.imgForm.normal_to_shading(self.normal, self.light)  # B x 1 x W x H 
         self.canon_img = self.imgForm.alb_to_canon(self.albedo, self.shading)   # B x 3 x W x H
 
@@ -125,10 +115,7 @@ class PhotoGeoAE(nn.Module):
                                          views=self.view)
 
         # flipped case
-        if author_test:
-            self.f_normal = self.render.depth2normal_author(self.f_depth)
-        else:
-            self.f_normal = self.imgForm.depth_to_normal(self.f_depth)             # B x 3 x W x H
+        self.f_normal = self.imgForm.depth_to_normal(self.f_depth)             # B x 3 x W x H
         self.f_shading = self.imgForm.normal_to_shading(self.f_normal, self.light)  # B x 1 x W x H 
         self.f_canon_img = self.imgForm.alb_to_canon(self.f_albedo, self.f_shading) # B x 3 x W x H
 
@@ -155,6 +142,10 @@ class PhotoGeoAE(nn.Module):
         mask_depth = mask_depth.detach()
         self.mask_depth = mask_depth
 
+        # added (05/29)
+        self.recon_output = self.recon_output * self.mask_depth
+        self.f_recon_output = self.f_recon_output * self.mask_depth
+
         '''calculate loss'''
         self.L1_loss = torch.abs(self.recon_output - input).mean()
         self.effective_L1_loss = (torch.abs(self.recon_output-input)*self.mask_depth).sum()/self.mask_depth.sum()
@@ -162,53 +153,31 @@ class PhotoGeoAE(nn.Module):
 
         self.percep_loss = self.percep(input, self.recon_output, self.conf_percep, mask_depth) # (b_size)
         self.photo_loss = self.get_photo_loss(input, self.recon_output, self.conf, mask_depth)  # (b_size)
+
         self.org_loss = self.photo_loss + self.lambda_p * self.percep_loss          # (b_size)
         
         self.f_percep_loss = self.percep(input, self.f_recon_output, self.f_conf_percep, mask_depth) # (b_size)
         self.f_photo_loss = self.get_photo_loss(input, self.f_recon_output, self.f_conf, mask_depth)  # (b_size)
+
         self.flip_loss = self.f_photo_loss + self.lambda_p * self.f_percep_loss           # (b_size)
-        
         self.tot_loss = self.org_loss + self.lambda_f * self.flip_loss
+
 
         '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
         if self.use_gt_depth:
-            bfm_metrics = BFM_Metrics(org_depth, self.gt_depth)
+            org_depth_masked = get_mask(org_depth)
+            gt_depth_masked = get_mask(self.gt_depth)
+
+            '''compute BFM metrics'''
+            bfm_metrics = BFM_Metrics(org_depth_masked, gt_depth_masked)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
-        '''
-        if plot_interms:
-            interms = {
-                'depth':depth,
-                'albedo':albedo,
-                'canon_img':canon_img,
-                'f_canon_img':f_canon_img,
-                'org_depth':org_depth,
-                'f_org_depth':f_org_depth,
-                'org_img':org_img,
-                'f_org_img':f_org_img,
-                'input_img':input
-            }# intermediate image
-            self.visualize(interms)
-
-        losses = {
-            'peceploss':perceploss.mean().detach().cpu().item(),
-            'photoloss':photoloss.mean().detach().cpu().item(),
-            'org_loss':org_loss.mean().detach().cpu().item(),
-            'f_peceploss':f_perceploss.mean().detach().cpu().item(),
-            'f_photoloss':f_photoloss.mean().detach().cpu().item(),
-            'flip_loss':flip_loss.mean().detach().cpu().item(),
-            'tot_loss':tot_loss.mean().detach().cpu().item()
-        }
-        self.logger(losses, step)
-        '''
-        
         if self.tot_loss.isnan().sum() != 0:
             assert(0)
         elif self.tot_loss.isinf().sum() != 0:
             assert(0)
         
-
         return self.tot_loss
 
     def logger(self, losses, step):
@@ -237,10 +206,8 @@ class PhotoGeoAE(nn.Module):
             img_grid = torchvision.utils.make_grid(images, normalize=normalize)
             self.logger.add_image(log_path, img_grid, epoch)
 
-        add_image_log('image_decomposition/depth', (self.depth -0.9)*5.0, epoch, False)
+        add_image_log('image_decomposition/depth', (self.depth -0.9) * 5.0, epoch, False)
         add_image_log('image_decomposition/albedo', self.albedo, epoch, False)
-        # add_image_log('image_decomposition/view', self.view, epoch)
-        # add_image_log('image_decomposition/light', self.light, epoch)
 
         add_image_log('image_decomposition/conf_percep', self.conf_percep, epoch)
         add_image_log('image_decomposition/conf', self.conf, epoch)
@@ -258,8 +225,8 @@ class PhotoGeoAE(nn.Module):
         add_image_log('image_decomposition/f_shading', self.f_shading/2., epoch, False)
         add_image_log('image_decomposition/f_canon_img', self.f_canon_img, epoch, False)
 
-        add_image_log('to_debug/recon_img', (self.recon_output+1.)/2., epoch, False)
-        add_image_log('to_debug/f_recon_img', (self.f_recon_output+1.)/2., epoch, False)
+        add_image_log('to_debug/recon_img', (self.recon_output+1.)/2., epoch)
+        add_image_log('to_debug/f_recon_img', (self.f_recon_output+1.)/2., epoch)
         add_image_log('to_debug/input_img', (self.input+1.)/2., epoch, False)
         add_image_log('to_debug/depth_mask', self.mask_depth, epoch)
 

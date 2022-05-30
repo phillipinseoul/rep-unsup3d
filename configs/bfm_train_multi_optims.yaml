@@ -1,0 +1,40 @@
+# trainer
+dataset: bfm
+num_epochs: 30
+batch_size: 64
+learning_rate: 0.0001
+run_train: true
+exp_name: bfm_train_multi_optims
+exp_path: experiments/bfm_train_multi_optims
+chk_path: models/bfm_train_multi_optims
+
+img_size: 64
+
+# light configs
+lambda_p: 1.0
+lambda_f: 0.5
+
+# network versions
+depth_v: depth_v0
+alb_v: alb_v0
+light_v: light_v0
+view_v: view_v0
+
+use_gt_depth: true
+use_conf: true
+write_logs: true
+
+# visualize option
+plot_size: 256
+fig_plot_step: 100
+plot_num: 32
+
+# chkpt option
+save_epoch: 100
+
+
+# load saved option
+load_chk: false
+# load_path: experiments/bfm_train/celeba_train_v0_05_21__13_29/models/best.pt
+
+

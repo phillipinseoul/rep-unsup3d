@@ -20,9 +20,13 @@ class BFM_Metrics():
         _, _, W, H = self.depth_ac.shape
 
         del_uv = torch.log(self.depth_ac) - torch.log(self.depth_gt)
+        
         temp_1 = torch.sum(del_uv ** 2) / (W * H)
         temp_2 = torch.sum(del_uv) / (W * H)
-        side = torch.sqrt(temp_1 - (temp_2 ** 2))
+        
+        # side = torch.sqrt(temp_1 - (temp_2 ** 2))
+        side = temp_1 - (temp_2 ** 2)
+
         return side                         
 
     def MAD_error(self):
