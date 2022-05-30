@@ -36,7 +36,7 @@ class ImageDecomp(nn.Module):
 
         res = 1.0 + res/10.0
 
-        res = res*(1-self.depth_border) + self.depth_border *self.border_depth  # border clamping
+        res = res*(1-self.depth_border) + self.depth_border * self.border_depth  # border clamping
 
         return res
     

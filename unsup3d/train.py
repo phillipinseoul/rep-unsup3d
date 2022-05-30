@@ -109,18 +109,18 @@ class Trainer():
 
         '''define optimizer and scheduler'''
         self.optimizer = optims.Adam(
-            params = self.model.parameters(),
+            params = self.model.imgDecomp.parameters(),
             lr = self.learning_rate,
             betas=(0.9, 0.999), 
             weight_decay=5e-4       # from author's code setting (05/22 inhee)
         )
 
-        '''
+    
         self.scheduler = optims.lr_scheduler.LambdaLR(
             optimizer = self.optimizer,
             lr_lambda = lambda epoch: 0.95 ** epoch,
         )
-        '''
+        
 
         '''load_model and optimizer state'''
         if self.load_chk:
@@ -176,7 +176,7 @@ class Trainer():
             cnt += 1
             self.step += 1
         
-        #self.scheduler.step()
+        self.scheduler.step()
         return epch_loss/cnt
 
     def load_model(self, PATH):

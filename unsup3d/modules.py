@@ -16,17 +16,17 @@ class Encoder(nn.Module):
 
         # encoder network
         encoder = [
-            nn.Conv2d(3, 32, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(3, 32, kernel_size=4, stride=2, padding=1, bias=False),
             nn.ReLU(),
-            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.ReLU(),
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),
             nn.ReLU(),
-            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=False),
             nn.ReLU(),
-            nn.Conv2d(256, 256, kernel_size=4, stride=1, padding=0),
+            nn.Conv2d(256, 256, kernel_size=4, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.Conv2d(256, cout, kernel_size=1, stride=1, padding=0),
+            nn.Conv2d(256, cout, kernel_size=1, stride=1, padding=0, bias=False),
             nn.Tanh()
         ]
         self.encoder = nn.Sequential(*encoder)
@@ -47,52 +47,52 @@ class AutoEncoder(nn.Module):
 
         # encoder network
         encoder = [
-            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1),       # layer 1
+            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1, bias=False),       # layer 1
             nn.GroupNorm(16, 64),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),      # layer 2
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),      # layer 2
             nn.GroupNorm(32, 128),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),      # layer 3
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=False),      # layer 3
             nn.GroupNorm(64, 256),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1),      # layer 4
+            nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1, bias=False),      # layer 4
             nn.LeakyReLU(0.2),
-            nn.Conv2d(512, 256, kernel_size=4, stride=1, padding=0),      # layer 5
+            nn.Conv2d(512, 256, kernel_size=4, stride=1, padding=0, bias=False),      # layer 5
             nn.ReLU()
         ]
 
         # decoder network
         decoder = [
-            nn.ConvTranspose2d(256, 512, kernel_size=4, stride=1, padding=0),
+            nn.ConvTranspose2d(256, 512, kernel_size=4, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(512, 512, kernel_size=3, stride=1, padding=1, bias=False),
             nn.ReLU(),
-            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(64, 256),
             nn.ReLU(),
-            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1, bias=False),
             nn.GroupNorm(64, 256),
             nn.ReLU(),
-            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(32, 128),
             nn.ReLU(),
-            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=1, bias=False),
             nn.GroupNorm(32, 128),
             nn.ReLU(),
-            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(16, 64),
             nn.ReLU(),
 
             nn.Upsample(scale_factor=2, mode = 'nearest'),
             
-            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, stride=1, padding=1, bias=False),
             nn.GroupNorm(16, 64),
             nn.ReLU(),
-            nn.Conv2d(64, 64, kernel_size=5, stride=1, padding=2),
+            nn.Conv2d(64, 64, kernel_size=5, stride=1, padding=2, bias=False),
             nn.GroupNorm(16, 64),
             nn.ReLU(),
-            nn.Conv2d(64, cout, kernel_size=5, stride=1, padding=2)
+            nn.Conv2d(64, cout, kernel_size=5, stride=1, padding=2, bias=False)
         ]
 
         if not no_activate:
@@ -117,45 +117,45 @@ class Conf_Conv(nn.Module):
         '''
         super(Conf_Conv, self).__init__()
         encoder = [
-            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(3, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(16, 64),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(64, 128, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(32, 128),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(128, 256, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(64, 256),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1),
+            nn.Conv2d(256, 512, kernel_size=4, stride=2, padding=1, bias=False),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(512, 128, kernel_size=4, stride=1, padding=0),
+            nn.Conv2d(512, 128, kernel_size=4, stride=1, padding=0, bias=False),
             nn.ReLU()
         ]
 
         decoder_1 = [
-            nn.ConvTranspose2d(128, 512, kernel_size=4, stride=1, padding=0),
+            nn.ConvTranspose2d(128, 512, kernel_size=4, stride=1, padding=0, bias=False),
             nn.ReLU(),
-            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(512, 256, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(64, 256),
             nn.ReLU(),
-            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(256, 128, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(32, 128),
             nn.ReLU()
         ]
 
         out_1 = [
-            nn.Conv2d(128, 2, kernel_size=3, stride=1, padding=1),
+            nn.Conv2d(128, 2, kernel_size=3, stride=1, padding=1, bias=False),
             nn.Softplus()
         ]
 
         decoder_2 = [
-            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(128, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(16, 64),
             nn.ReLU(),
-            nn.ConvTranspose2d(64, 64, kernel_size=4, stride=2, padding=1),
+            nn.ConvTranspose2d(64, 64, kernel_size=4, stride=2, padding=1, bias=False),
             nn.GroupNorm(16, 64),
             nn.ReLU(),
-            nn.Conv2d(64, 2, kernel_size=5, stride=1, padding=2),
+            nn.Conv2d(64, 2, kernel_size=5, stride=1, padding=2, bias=False),
             nn.Softplus()
         ]
 
