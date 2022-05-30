@@ -1,12 +1,12 @@
 # trainer
 dataset: bfm
-num_epochs: 20000
+num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
 run_train: true
-exp_name: bfm_train_v0
-exp_path: experiments/bfm_train
-chk_path: models/bfm_train
+exp_name: bfm_train_fit
+exp_path: experiments/bfm_train_fit
+chk_path: models/bfm_train_fit
 
 img_size: 64
 
@@ -26,11 +26,11 @@ write_logs: true
 
 # visualize option
 plot_size: 256
-fig_plot_epoch: 3 
+fig_plot_step: 50
 plot_num: 32
 
 # chkpt option
-save_epoch: 1000000
+save_epoch: 100
 
 
 # load saved option

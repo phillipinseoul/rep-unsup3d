@@ -4,6 +4,7 @@ in Photo-geometric Autoencoding pipeline
 '''
 
 import torch
+import torch.nn as nn
 import torch.nn.functional as F
 import math
 
@@ -24,7 +25,7 @@ class ImageFormation():
             [f, 0, c_u],
             [0, f, c_v],
             [0, 0, 1]], dtype = torch.float32)              
-        self.K_inv = torch.linalg.inv(self.K)               # 3x3 matrix
+        self.K_inv = torch.linalg.inv(self.K).unsqueeze(0).to(device)               # 3x3 matrix
         self.K = self.K.unsqueeze(0).to(device)
 
         self.img_size = size
@@ -42,28 +43,24 @@ class ImageFormation():
         - output:
             normal_map: B x 3 x W x H
         '''
-        B, _,  W, H = depth_map.shape 
+        
+        '''changed depth_to_normal by including K_inv (05/24, Yuseung)'''
+        grid = gen_grid(depth_map)
+        grid_3d = torch.cat(
+            [grid, torch.ones_like(depth_map, dtype=torch.float32).to(self.device)],
+            dim=1)
+        depth_pc = safe_matmul(grid_3d, self.K_inv.transpose(2, 1)) * depth_map
 
-        x_range = torch.linspace(0, H - 1, H, dtype=torch.float32, device=self.device)
-        y_range = torch.linspace(0, W - 1, W, dtype=torch.float32, device=self.device)
+        v1 = depth_pc[:, :, 1:-1, 2:] - depth_pc[:, :, 1:-1, :-2]
+        v2 = depth_pc[:, :, 2:, 1:-1] - depth_pc[:, :, :-2, 1:-1]
+        normal = v1.cross(v2, dim=1)
+        # normal = torch.cross(v2, -v1, dim=1)
 
-        x_grid, y_grid = torch.meshgrid(x_range, y_range, indexing = 'ij')
-        x_grid = x_grid.unsqueeze(0).unsqueeze(0).repeat(B, 1, 1, 1)
-        y_grid = y_grid.unsqueeze(0).unsqueeze(0).repeat(B, 1, 1, 1)
+        zero_pad = nn.ZeroPad2d(1)
+        normal = zero_pad(normal)
+        normal = normal / (torch.sqrt(torch.sum(normal ** 2, dim=1, keepdim=True)) + EPS)
 
-        depth_x_s = torch.zeros_like(depth_map, device=self.device)
-        depth_y_s = torch.zeros_like(depth_map, device=self.device)
-        depth_x_s[:, :, 1:W, :] = depth_map[:, :, 0:W-1, :]
-        depth_y_s[:, :, :, 1:H] = depth_map[:, :, :, 0:H-1]
-
-        v1 = torch.cat([x_grid, (y_grid - 1), depth_y_s], dim=1)
-        v2 = torch.cat([(x_grid - 1), y_grid, depth_x_s], dim=1)
-        c = torch.cat([x_grid, y_grid, depth_map], dim=1)
-
-        d = torch.cross(v2 - c, v1 - c, dim=1)
-        normal_map = d / (torch.sqrt(torch.sum(d ** 2, dim=1, keepdim=True)) + EPS)
-
-        return normal_map   
+        return normal
 
     def normal_to_shading(self, normal_map, lighting):
         '''
@@ -314,8 +311,7 @@ def get_faces(B, W, H):
     order is counter clock-wise (right-thumb's rule)
     (05/14 inhee)
     '''
-
-    faces = torch.arange(W*H, dtype = torch.int32)
+    faces = torch.arange(W * H, dtype = torch.int32)
     faces_2D = faces.reshape(W,H)   # W x H
 
     face_L = torch.stack(
