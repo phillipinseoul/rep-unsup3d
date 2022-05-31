@@ -30,7 +30,7 @@ fig_plot_step: 100
 plot_num: 32
 
 # chkpt option
-save_epoch: 1000
+save_epoch: 10
 
 
 # load saved option
