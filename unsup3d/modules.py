@@ -4,8 +4,8 @@ Any learnable parameters shouldn't be defined out of this file
 '''
 import torch
 import torch.nn as nn
+from unsup3d.__init__ import *
 
-test_ELU = False
 
 # network architecture for viewpoint, lighting
 class Encoder(nn.Module):
@@ -224,7 +224,8 @@ class Conf_Conv(nn.Module):
         out_1 = self.out_1(out)
         out_2 = self.decoder_2(out)
 
-        if out_1.isnan().sum() != 0 or out_2.isnan().sum() != 0:
-            assert(0)
+        if torch_old:
+            if out_1.isnan().sum() != 0 or out_2.isnan().sum() != 0:
+                assert(0)
         
         return out_1, out_2

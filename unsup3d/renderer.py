@@ -3,13 +3,12 @@ import torch.nn as nn
 import math
 from neural_renderer import Renderer
 from unsup3d.utils import *
+from unsup3d.__init__ import *
 
-BATCH_SIZE = 16
-EPS = 1e-7
 
+BATCH_SIZE = 64
 DEPTH_ALLOW_MARGIN = 0.2        # originally, it's 0.1
-IS_DEBUG = False
-USE_WIDER_DEPTH = False
+
 
 class RenderPipeline(nn.Module):
     def __init__(self, device = torch.device("cuda"), b_size = BATCH_SIZE, args = None):

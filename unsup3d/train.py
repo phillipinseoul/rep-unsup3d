@@ -13,6 +13,7 @@ import os
 import random
 import numpy as np
 
+from unsup3d.__init__ import *
 from unsup3d.model import PhotoGeoAE
 from unsup3d.dataloader import CelebA, BFM
 
@@ -29,9 +30,6 @@ if torch.cuda.is_available():
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = True
     torch.cuda.manual_seed_all(random_seed)
-
-is_debug = False
-use_sched = False
 
 
 class Trainer():

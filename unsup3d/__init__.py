@@ -1,5 +1,13 @@
 '''
 will be used to initialize...
 '''
-from .modules import AutoEncoder
-from .train import Trainer
+
+
+is_debug = False
+use_sched = False
+EPS = 1e-7
+test_ELU = False
+torch_old = True
+USE_WIDER_DEPTH = False
+
+
