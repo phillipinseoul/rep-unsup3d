@@ -231,10 +231,8 @@ class PhotoGeoAE(nn.Module):
 
         add_image_log('image_decomposition/input_img', self.input, epoch)
 
-        '''
         if self.use_gt_depth:
             add_image_log('image_decomposition/gt_depth', self.gt_depth, epoch)
-        '''
 
         add_image_log('reconstruction/recon_output', self.recon_output, epoch)
         add_image_log('reconstruction/f_recon_output', self.f_recon_output, epoch)
@@ -276,8 +274,6 @@ class PhotoGeoAE(nn.Module):
         if self.use_gt_depth:
             self.logger.add_scalar('losses/side_error', self.side_error, epoch)
             self.logger.add_scalar('losses/mad_error', self.mad_error, epoch)
-
-        
 
     def set_logger(self, writer):
         self.logger = writer

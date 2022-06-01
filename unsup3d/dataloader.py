@@ -50,7 +50,7 @@ class CelebA(Dataset):
 
 
 class BFM(Dataset):
-    def __init__(self, setting = "train", img_size = 64):
+    def __init__(self, setting = "train", img_size = 64, crop_rate = 0.125):
         '''check setting first'''
         if setting not in setting_list:
             print("BFM, wrong data setting, you should select one of 'train', 'test' or 'val'.")
@@ -61,6 +61,7 @@ class BFM(Dataset):
         self.img_path = path.join(self.path, 'image')       # path for images
         self.gt_path = path.join(self.path, 'depth')        # path for ground truth depth maps
         self.img_size = (img_size, img_size)
+        self.crop_rate = crop_rate
 
         img_list = [name for name in os.listdir(self.img_path) if path.isfile(path.join(self.img_path, name))]
         gt_list = [name for name in os.listdir(self.gt_path) if path.isfile(path.join(self.gt_path, name))]
@@ -89,6 +90,12 @@ class BFM(Dataset):
             return None
 
         re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
+
+        # add image cropping
+        re_img = re_img[self.img_size*self.crop_rate : self.img_size * (1-self.crop_rate), self.img_size*self.crop_rate : self.img_size * (1-self.crop_rate)]
+        re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
+
+
         re_img = torch.tensor(re_img, dtype = torch.float32)
         re_img = re_img.permute(2, 0, 1)                    # 3 x H x W
         re_img /= MAX_PIX                                   # change value range 0~1
