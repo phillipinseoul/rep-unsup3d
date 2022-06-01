@@ -47,7 +47,7 @@ class RenderPipeline(nn.Module):
             [f, 0, c_u],
             [0, f, c_v],
             [0, 0, 1]], dtype = torch.float32)              
-        self.K_inv = torch.linalg.inv(self.K)               # 3x3 matrix
+        self.K_inv = torch.inverse(self.K)               # 3x3 matrix
         self.K = self.K.unsqueeze(0).to(self.device)
         self.K_inv = self.K_inv.unsqueeze(0).to(self.device)
 

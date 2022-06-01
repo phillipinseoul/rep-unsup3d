@@ -40,7 +40,7 @@ class CelebA(Dataset):
         re_img /= MAX_PIX                               # change value range 0~1
         
         if np.random.rand() > 0.5:
-            re_img = transforms.functional.hflip(re_img)
+            re_img = torch.flip(re_img, dims = [2])
 
         return re_img
 
