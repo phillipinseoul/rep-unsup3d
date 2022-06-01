@@ -11,7 +11,6 @@ import torchvision.models as pre_model
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 from datetime import datetime
-from pytictoc import TicToc
 
 from unsup3d.networks import ImageDecomp
 from unsup3d.utils import ImageFormation
