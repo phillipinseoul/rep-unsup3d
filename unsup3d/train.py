@@ -159,6 +159,10 @@ class Trainer():
             losses = self.model(inputs)
             loss = torch.mean(losses)
             loss.backward()
+
+            # add gradient clipping (06/01)
+            torch.nn.utils.clip_grad_norm_(self.model.imgDecomp.parameters(), max_norm=5)
+
             self.optimizer.step()
 
             # calculate epch_loss
