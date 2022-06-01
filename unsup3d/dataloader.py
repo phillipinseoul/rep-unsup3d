@@ -1,3 +1,4 @@
+from mimetypes import init
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -7,11 +8,13 @@ import os
 import cv2
 from torch.utils.data import DataLoader, Dataset
 import os.path as path
+from unsup3d.__init__ import *
 
 MAX_PIX = 255
 setting_list = ['train','val','test']
 CelebA_PATH = '/root/unsup3d-rep/data/celeba'
 BFM_PATH = '/root/unsup3d-rep/data/synface'
+
 
 class CelebA(Dataset):
     def __init__(self, setting = "train", img_size = 64):

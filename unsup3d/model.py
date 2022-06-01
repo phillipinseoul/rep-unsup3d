@@ -17,9 +17,10 @@ from unsup3d.utils import ImageFormation
 from unsup3d.renderer import *
 from unsup3d.metrics import BFM_Metrics
 from unsup3d.utils import get_mask
+from unsup3d.__init__ import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-EPS = 1e-7
+
 
 class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
@@ -172,10 +173,11 @@ class PhotoGeoAE(nn.Module):
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
-        if self.tot_loss.isnan().sum() != 0:
-            assert(0)
-        elif self.tot_loss.isinf().sum() != 0:
-            assert(0)
+        if torch_old:
+            if self.tot_loss.isnan().sum() != 0:
+                assert(0)
+            elif self.tot_loss.isinf().sum() != 0:
+                assert(0)
         
         return self.tot_loss
 

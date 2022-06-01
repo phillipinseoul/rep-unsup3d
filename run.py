@@ -3,6 +3,7 @@ run train/test/demo
 '''
 import argparse
 import yaml
+from unsup3d.__init__ import *
 from unsup3d.train import Trainer
 from tensorboardX import SummaryWriter
 
@@ -31,6 +32,7 @@ if __name__ == "__main__":
         type=str, 
         default='configs/celeba_train_v2.yaml'
     )
+    
     # parser.add_argument('--num_workers', help='Set number of workers', type=int, default=4)
     # parser.add_argument('--use_gpu', help='Set the usage of GPU', type=bool, default=True)
     '''TODO: add more arguments'''

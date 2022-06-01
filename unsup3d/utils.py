@@ -7,8 +7,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+from unsup3d.__init__ import *
 
-EPS = 1e-7
+
 
 class ImageFormation():
     def __init__(self, device, size=64, 
