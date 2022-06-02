@@ -3,13 +3,12 @@ import torch.nn as nn
 import math
 from neural_renderer import Renderer
 from unsup3d.utils import *
+from unsup3d.__init__ import *
 
-BATCH_SIZE = 16
-EPS = 1e-7
 
+BATCH_SIZE = 64
 DEPTH_ALLOW_MARGIN = 0.2        # originally, it's 0.1
-IS_DEBUG = False
-USE_WIDER_DEPTH = False
+
 
 class RenderPipeline(nn.Module):
     def __init__(self, device = torch.device("cuda"), b_size = BATCH_SIZE, args = None):
@@ -47,7 +46,7 @@ class RenderPipeline(nn.Module):
             [f, 0, c_u],
             [0, f, c_v],
             [0, 0, 1]], dtype = torch.float32)              
-        self.K_inv = torch.linalg.inv(self.K)               # 3x3 matrix
+        self.K_inv = torch.inverse(self.K)               # 3x3 matrix
         self.K = self.K.unsqueeze(0).to(self.device)
         self.K_inv = self.K_inv.unsqueeze(0).to(self.device)
 

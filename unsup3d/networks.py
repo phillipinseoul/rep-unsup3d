@@ -6,6 +6,8 @@ import torch
 import torch.optim as optims
 
 from unsup3d.modules import Encoder, AutoEncoder, Conf_Conv
+from unsup3d.__init__ import *
+
 
 # Image decompostion pipline
 class ImageDecomp(nn.Module):

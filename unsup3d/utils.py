@@ -7,8 +7,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
+from unsup3d.__init__ import *
 
-EPS = 1e-7
+
 
 class ImageFormation():
     def __init__(self, device, size=64, 
@@ -25,7 +26,7 @@ class ImageFormation():
             [f, 0, c_u],
             [0, f, c_v],
             [0, 0, 1]], dtype = torch.float32)              
-        self.K_inv = torch.linalg.inv(self.K).unsqueeze(0).to(device)               # 3x3 matrix
+        self.K_inv = torch.inverse(self.K).unsqueeze(0).to(device)               # 3x3 matrix
         self.K = self.K.unsqueeze(0).to(device)
 
         self.img_size = size

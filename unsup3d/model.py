@@ -11,16 +11,16 @@ import torchvision.models as pre_model
 import torchvision.transforms as transforms
 from tensorboardX import SummaryWriter
 from datetime import datetime
-from pytictoc import TicToc
 
 from unsup3d.networks import ImageDecomp
 from unsup3d.utils import ImageFormation
 from unsup3d.renderer import *
 from unsup3d.metrics import BFM_Metrics
 from unsup3d.utils import get_mask
+from unsup3d.__init__ import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-EPS = 1e-7
+
 
 class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
@@ -86,7 +86,8 @@ class PhotoGeoAE(nn.Module):
         '''image decomposition'''
         self.input = input
         self.depth = self.imgDecomp.get_depth_map(input)     # B x 3 x W x H
-        self.albedo = self.imgDecomp.get_albedo(input)       # B x 1 x W x H
+        self.albedo = self.imgDecomp.get_albedo(input)
+        (input)       # B x 1 x W x H
         self.view = self.imgDecomp.get_view(input)           # B x 6
         self.light = self.imgDecomp.get_light(input)         # B x 4
 
@@ -142,8 +143,8 @@ class PhotoGeoAE(nn.Module):
         mask_depth = mask_depth.detach()
         self.mask_depth = mask_depth
 
-        self.recon_output = self.recon_output * self.mask_depth
-        self.f_recon_output = self.f_recon_output * self.mask_depth         # (added 05/29 inhee) it would affect the percep loss only.
+        self.recon_output = self.recon_output * mask_depth
+        self.f_recon_output = self.f_recon_output * mask_depth         # (added 05/29 inhee) it would affect the percep loss only.
 
         '''calculate loss'''
         self.L1_loss = torch.abs(self.recon_output - input).mean()
@@ -172,10 +173,11 @@ class PhotoGeoAE(nn.Module):
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
-        if self.tot_loss.isnan().sum() != 0:
-            assert(0)
-        elif self.tot_loss.isinf().sum() != 0:
-            assert(0)
+        if torch_old:
+            if self.tot_loss.isnan().sum() != 0:
+                assert(0)
+            elif self.tot_loss.isinf().sum() != 0:
+                assert(0)
         
         return self.tot_loss
 

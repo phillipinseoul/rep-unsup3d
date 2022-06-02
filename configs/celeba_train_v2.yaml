@@ -4,7 +4,7 @@ num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
 run_train: True
-exp_name: celeba_train_0530_added_scheduler
+exp_name: celeba_train_v2_cuda11_clipping
 exp_path: experiments/celeba_train
 chk_path: models/celeba_train
 
@@ -27,7 +27,7 @@ write_logs: true
 
 # visualize option
 plot_size: 256
-fig_plot_step: 100
+fig_plot_step: 500
 plot_num: 32
 
 # chkpt option
@@ -36,4 +36,4 @@ save_epoch: 10
 
 # load saved option
 load_chk: false
-load_path: experiments/celeba_train/celeba_train_v0_05_21__13_29/models/best.pt
+load_path: /root/unsup3d-rep/experiments/celeba_train/celeba_train_0524_v1_05_24__05_50/models/best.pt

@@ -13,8 +13,10 @@ import os
 import random
 import numpy as np
 
+from unsup3d.__init__ import *
 from unsup3d.model import PhotoGeoAE
 from unsup3d.dataloader import CelebA, BFM
+
 
 # initial configurations 
 random_seed = 0
@@ -25,11 +27,9 @@ torch.autograd.set_detect_anomaly(False)
 
 if torch.cuda.is_available():
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = True
+    torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.enabled = True
     torch.cuda.manual_seed_all(random_seed)
-
-is_debug = False
 
 
 class Trainer():
@@ -175,7 +175,8 @@ class Trainer():
             cnt += 1
             self.step += 1
         
-        self.scheduler.step()
+        if use_sched:
+            self.scheduler.step()
         return epch_loss/cnt
 
     def load_model(self, PATH):

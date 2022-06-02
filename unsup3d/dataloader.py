@@ -1,3 +1,4 @@
+from mimetypes import init
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -7,11 +8,13 @@ import os
 import cv2
 from torch.utils.data import DataLoader, Dataset
 import os.path as path
+from unsup3d.__init__ import *
 
 MAX_PIX = 255
 setting_list = ['train','val','test']
 CelebA_PATH = '/root/unsup3d-rep/data/celeba'
 BFM_PATH = '/root/unsup3d-rep/data/synface'
+
 
 class CelebA(Dataset):
     def __init__(self, setting = "train", img_size = 64):
@@ -40,7 +43,7 @@ class CelebA(Dataset):
         re_img /= MAX_PIX                               # change value range 0~1
         
         if np.random.rand() > 0.5:
-            re_img = transforms.functional.hflip(re_img)
+            re_img = torch.flip(re_img, dims = [2])
 
         return re_img
 
