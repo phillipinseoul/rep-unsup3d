@@ -90,21 +90,23 @@ class BFM(Dataset):
             return None
 
         re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
-
-        # add image cropping
-        re_img = re_img[self.img_size*self.crop_rate : self.img_size * (1-self.crop_rate), self.img_size*self.crop_rate : self.img_size * (1-self.crop_rate)]
-        re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
-
-
+        top = int(self.img_size[0]*self.crop_rate)
+        bottom = int(self.img_size[0]*(1-self.crop_rate))
+        re_img = re_img[top:bottom, top:bottom]                     # add image cropping
+        re_img = cv2.resize(re_img, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_img = torch.tensor(re_img, dtype = torch.float32)
         re_img = re_img.permute(2, 0, 1)                    # 3 x H x W
         re_img /= MAX_PIX                                   # change value range 0~1
 
         '''resize gt depth map'''
         re_depth = cv2.cvtColor(re_depth, cv2.COLOR_BGR2GRAY)
+        re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
+        re_depth = re_depth[top:bottom, top:bottom]                 # add image cropping
+        re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_depth = torch.tensor(re_depth, dtype = torch.float32).unsqueeze(-1)
         re_depth = re_depth.permute(2, 0, 1)                  # 1 x H x W
         re_depth /= MAX_PIX                                   # change value range 0~1
+        re_depth = 1 - re_depth
 
         if np.random.rand() > 0.5:
             re_img = transforms.functional.hflip(re_img)

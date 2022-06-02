@@ -162,12 +162,10 @@ class Trainer():
 
             # add gradient clipping (06/01)
             torch.nn.utils.clip_grad_norm_(self.model.imgDecomp.parameters(), max_norm=5)
-
             self.optimizer.step()
 
             # calculate epch_loss
             epch_loss += loss.detach().cpu()
-            
             self.writer.add_scalar("Loss_step/train", loss.detach().cpu().item(), self.step)
             self.model.loss_plot(self.step)
 
