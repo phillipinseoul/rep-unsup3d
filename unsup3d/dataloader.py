@@ -82,27 +82,25 @@ class BFM(Dataset):
     def __getitem__(self, idx):
         '''return both image and gt depth_map as tensor.'''
 
+        '''crop settings'''
+        top = int(self.img_size[0] * self.crop_rate)            # crop out `crop_rate` of top, bottom, left, right
+        bottom = int(self.img_size[0] * (1-self.crop_rate))
+
         '''resize image'''
         img = cv2.imread(path.join(self.img_path, self.img_gt_pairs[idx][0]))
-        gt_depth = cv2.imread(path.join(self.gt_path, self.img_gt_pairs[idx][1]))
 
-        try:
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            re_depth = cv2.resize(gt_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
-        except:
-            return None
-
-        re_img = cv2.resize(img, self.img_size, interpolation = cv2.INTER_LINEAR)
-        top = int(self.img_size[0]*self.crop_rate)
-        bottom = int(self.img_size[0]*(1-self.crop_rate))
-        re_img = re_img[top:bottom, top:bottom]                     # add image cropping
+        re_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        re_img = cv2.resize(re_img, self.img_size, interpolation = cv2.INTER_LINEAR)
+        re_img = re_img[top:bottom, top:bottom]                     # cropping
         re_img = cv2.resize(re_img, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_img = torch.tensor(re_img, dtype = torch.float32)
         re_img = re_img.permute(2, 0, 1)                    # 3 x H x W
         re_img /= MAX_PIX                                   # change value range 0~1
 
         '''resize gt depth map'''
-        re_depth = cv2.cvtColor(re_depth, cv2.COLOR_BGR2GRAY)
+        gt_depth = cv2.imread(path.join(self.gt_path, self.img_gt_pairs[idx][1]))
+        
+        re_depth = cv2.cvtColor(gt_depth, cv2.COLOR_BGR2GRAY)
         re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_depth = re_depth[top:bottom, top:bottom]                 # add image cropping
         re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)

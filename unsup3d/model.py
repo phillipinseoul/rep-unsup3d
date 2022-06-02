@@ -19,9 +19,6 @@ from unsup3d.metrics import BFM_Metrics
 from unsup3d.utils import get_mask
 from unsup3d.__init__ import *
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-
 class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
         super(PhotoGeoAE, self).__init__()
@@ -37,9 +34,11 @@ class PhotoGeoAE(nn.Module):
         self.use_conf = configs['use_conf']
         self.b_size = configs['batch_size']
 
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
         '''initialize image decomposition networks'''
         self.imgDecomp = ImageDecomp(
-            device=device,
+            device=self.device,
             W = 64, H =64,
             depth_v=self.depth_v, 
             alb_v=self.alb_v, 
@@ -51,61 +50,54 @@ class PhotoGeoAE(nn.Module):
         self.percep = PercepLoss()
 
         '''pipeline utils'''
-        self.imgForm = ImageFormation(device=device, size=64)
-        self.render = RenderPipeline(device=device, b_size=self.b_size)
+        self.imgForm = ImageFormation(device=self.device, size=64)
+        self.render = RenderPipeline(device=self.device, b_size=self.b_size)
         
 
     def get_photo_loss(self, img1, img2, conf, mask = None):
         L1_loss = torch.abs(img1 - img2)
-        losses = L1_loss *2**0.5 / (conf + EPS) + torch.log(conf + EPS)
+        losses = L1_loss * 2 ** 0.5 / (conf + EPS) + torch.log(conf + EPS)
 
         if mask is not None:
             losses = losses * mask
-            loss = torch.sum(losses, dim = (1,2,3)) / (torch.sum(mask, dim = (1,2,3))+EPS)
+            loss = torch.sum(losses, dim = (1,2,3)) / (torch.sum(mask, dim = (1,2,3)) + EPS)
         else:
             num_cases = img1.shape[1] * img1.shape[2] * img1.shape[3]
             loss = torch.sum(losses, dim=(1, 2, 3)) / num_cases
         
         return loss
 
-
     def forward(self, input):
         '''
-        input:
-        - input: (Bx3xHxW), preprocessed on dataloader as H=W=64
-        implement pipeline here
+        - input: (B x 3 x H x W) preprocessed on dataloader as H = W = 64
         '''
         
-        '''for BFM datasets, separate gt_depth (05/23 yuseung)'''
+        '''for BFM datasets, separate gt_depth'''
         if self.use_gt_depth:
             input, self.gt_depth = input
 
-        '''normalize the input (-1, 1)'''
+        '''normalize the input to range (-1, 1)'''
         input = input * 2.-1.
 
         '''image decomposition'''
         self.input = input
-        self.depth = self.imgDecomp.get_depth_map(input)     # B x 3 x W x H
-        self.albedo = self.imgDecomp.get_albedo(input)
-        (input)       # B x 1 x W x H
-        self.view = self.imgDecomp.get_view(input)           # B x 6
-        self.light = self.imgDecomp.get_light(input)         # B x 4
+        self.depth = self.imgDecomp.get_depth_map(input)                    # B x 3 x W x H
+        self.albedo = self.imgDecomp.get_albedo(input)                      # B x 1 x W x H
+        self.view = self.imgDecomp.get_view(input)                          # B x 6
+        self.light = self.imgDecomp.get_light(input)                        # B x 4
+        
+        raw_conf_percep, raw_conf = self.imgDecomp.get_confidence(input)    # B x 2 x W/4 x H/4 , B x 2 x W x H 
+        self.conf_percep = raw_conf_percep[:, 0:1 , :, :]                   # B x 1 x W/4 x H/4
+        self.conf = raw_conf[:, 0:1, :, :]                                  # B x 1 x W x H
 
-        raw_conf_percep, raw_conf = self.imgDecomp.get_confidence(input)    # B 2 W/4 H/4 ,, B 2 W H 
-
-        self.conf_percep = raw_conf_percep[:,0:1,:,:]        # B x 1 x W/4 x H/4
-        self.conf = raw_conf[:,0:1,:,:]                      # B x 1 x W x H
-
-        self.f_conf_percep = raw_conf_percep[:,1:2,:,:]        # B x 1 x W/4 x H/4
-        self.f_conf = raw_conf[:,1:2,:,:]                      # B x 1 x W x H
+        self.f_conf_percep = raw_conf_percep[:, 1:2, :, :]                  # B x 1 x W/4 x H/4
+        self.f_conf = raw_conf[:, 1:2, :, :]                                # B x 1 x W x H
 
         self.f_albedo = torch.flip(self.albedo, dims = [3])      # in pytorch, we should flip the last dimension
         self.f_depth = torch.flip(self.depth, dims = [3])        # we made comment as W x H order, but in fact it's H x W (torch default) 
                                                                  # So here, I flipped based on last dim
 
-        ############################################ need to check flipping (05/14, inhee) !!!
-
-        '''implement some pipeline'''
+        '''implement image reconstruction pipeline'''
         # unflipped case
         self.normal = self.imgForm.depth_to_normal(self.depth)                  # B x 3 x W x H
         self.shading = self.imgForm.normal_to_shading(self.normal, self.light)  # B x 1 x W x H 
@@ -116,7 +108,7 @@ class PhotoGeoAE(nn.Module):
                                          views=self.view)
 
         # flipped case
-        self.f_normal = self.imgForm.depth_to_normal(self.f_depth)             # B x 3 x W x H
+        self.f_normal = self.imgForm.depth_to_normal(self.f_depth)                  # B x 3 x W x H
         self.f_shading = self.imgForm.normal_to_shading(self.f_normal, self.light)  # B x 1 x W x H 
         self.f_canon_img = self.imgForm.alb_to_canon(self.f_albedo, self.f_shading) # B x 3 x W x H
 
@@ -124,14 +116,13 @@ class PhotoGeoAE(nn.Module):
                                              canon_img=self.f_canon_img, 
                                              views=self.view)
 
-        # final results
+        # reconstruction results
         self.recon_output = org_img
         self.f_recon_output = f_org_img
-
         self.org_depth = org_depth
         self.f_org_depth = f_org_depth
 
-        # Mask of loss
+        # apply mask for restriction area of loss calculation
         if USE_WIDER_DEPTH: 
             depth_margin = 0.2
         else:
@@ -139,37 +130,35 @@ class PhotoGeoAE(nn.Module):
 
         mask_org_depth = (org_depth < (1.1 + depth_margin)).float()
         mask_flip_depth = (f_org_depth < (1.1 + depth_margin)).float()
-        mask_depth = mask_org_depth * mask_flip_depth       #b 1 w h
+        mask_depth = mask_org_depth * mask_flip_depth                   # B x 1 x W x H
         mask_depth = mask_depth.detach()
         self.mask_depth = mask_depth
 
         self.recon_output = self.recon_output * mask_depth
-        self.f_recon_output = self.f_recon_output * mask_depth         # (added 05/29 inhee) it would affect the percep loss only.
+        self.f_recon_output = self.f_recon_output * mask_depth         # (05/29 inhee) it would affect the percep loss only.
 
         '''calculate loss'''
         self.L1_loss = torch.abs(self.recon_output - input).mean()
-        self.effective_L1_loss = (torch.abs(self.recon_output-input)*self.mask_depth).sum()/self.mask_depth.sum()
+        self.effective_L1_loss = (torch.abs(self.recon_output - input) * self.mask_depth).sum() / self.mask_depth.sum()
         self.effective_pixels = self.mask_depth.sum()
 
-        self.percep_loss = self.percep(input, self.recon_output, self.conf_percep, mask_depth) # (b_size)
+        self.percep_loss = self.percep(input, self.recon_output, self.conf_percep, mask_depth)  # (b_size)
         self.photo_loss = self.get_photo_loss(input, self.recon_output, self.conf, mask_depth)  # (b_size)
-
-        self.org_loss = self.photo_loss + self.lambda_p * self.percep_loss          # (b_size)
+        self.org_loss = self.photo_loss + self.lambda_p * self.percep_loss                      # (b_size)
         
-        self.f_percep_loss = self.percep(input, self.f_recon_output, self.f_conf_percep, mask_depth) # (b_size)
-        self.f_photo_loss = self.get_photo_loss(input, self.f_recon_output, self.f_conf, mask_depth)  # (b_size)
+        self.f_percep_loss = self.percep(input, self.f_recon_output, self.f_conf_percep, mask_depth)    # (b_size)
+        self.f_photo_loss = self.get_photo_loss(input, self.f_recon_output, self.f_conf, mask_depth)    # (b_size)
 
-        self.flip_loss = self.f_photo_loss + self.lambda_p * self.f_percep_loss           # (b_size)
+        self.flip_loss = self.f_photo_loss + self.lambda_p * self.f_percep_loss                         # (b_size)
         self.tot_loss = self.org_loss + self.lambda_f * self.flip_loss
-
 
         '''for BFM dataset, calculate 3D reconstruction accuracy (SIDE, MAD)'''
         if self.use_gt_depth:
-            org_depth_masked = get_mask(org_depth)
-            gt_depth_masked = get_mask(self.gt_depth)
+            gt_depth_mask = get_mask(self.gt_depth)
+            self.gt_depth_mask = gt_depth_mask * self.mask_depth
 
             '''compute BFM metrics'''
-            bfm_metrics = BFM_Metrics(org_depth_masked, gt_depth_masked)
+            bfm_metrics = BFM_Metrics(org_depth, self.gt_depth, self.gt_depth_mask)
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
@@ -235,6 +224,8 @@ class PhotoGeoAE(nn.Module):
 
         if self.use_gt_depth:
             add_image_log('image_decomposition/gt_depth', self.gt_depth, epoch)
+            add_image_log('to_debug/gt_depth_mask', self.gt_depth_mask, epoch)
+            add_image_log('reconstruction/masked_recon_output', self.gt_depth_mask * self.recon_output, epoch)
 
         add_image_log('reconstruction/recon_output', self.recon_output, epoch)
         add_image_log('reconstruction/f_recon_output', self.f_recon_output, epoch)
