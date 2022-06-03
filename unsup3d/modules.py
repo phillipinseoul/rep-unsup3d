@@ -2,6 +2,8 @@
 Define all neural networks used in photo-geometric pipeline
 Any learnable parameters shouldn't be defined out of this file
 '''
+import os
+import requests
 import torch
 import torch.nn as nn
 from unsup3d.__init__ import *
@@ -229,3 +231,94 @@ class Conf_Conv(nn.Module):
                 assert(0)
         
         return out_1, out_2
+
+
+
+
+###########################################
+# Copyright (c) Facebook, Inc. and its affiliates.
+# All rights reserved.
+#
+# https://github.com/facebookresearch/DeeperCluster/blob/main/src/model/vgg16.py
+# This code is from FAIR's DeepCluster repository, with small modification
+# We use this code to load pretrained file, for ablation test
+# 
+
+cfg = {
+    'D': [64, 64, 'M', 128, 128, 'M', 256, 256, 256, 'M', 512, 512, 512, 'M', 512, 512, 512, 'M'],
+}
+
+class VGG16(nn.Module):
+    '''
+    VGG16 model 
+    '''
+    def __init__(self, dim_in, relu=True, dropout=0.5, batch_norm=True):
+        super(VGG16, self).__init__()
+        self.features = make_layers(cfg['D'], dim_in, batch_norm=batch_norm)
+        self.dim_output_space = 4096
+        classifier = [
+            nn.Linear(512 * 7 * 7, 4096),
+            nn.ReLU(True),
+            nn.Dropout(dropout),
+            nn.Linear(4096, 4096),
+        ]
+        if relu:
+            classifier.append(nn.ReLU(True))
+        self.classifier = nn.Sequential(*classifier)
+
+        load_pretrained_rotnet(self)
+            
+    def forward(self, x):
+        x = self.features(x)
+        if self.classifier is not None:
+            x = x.view(x.size(0), -1)
+            x = self.classifier(x)
+        return x
+
+
+def make_layers(cfg, in_channels, batch_norm=True):
+    layers = []
+    for v in cfg:
+        if v == 'M':
+            layers += [nn.MaxPool2d(kernel_size=2, stride=2)]
+        else:
+            conv2d = nn.Conv2d(in_channels, v, kernel_size=3, padding=1)
+            if batch_norm:
+                layers += [conv2d, nn.BatchNorm2d(v), nn.ReLU(inplace=True)]
+            else:
+                layers += [conv2d, nn.ReLU(inplace=True)]
+            in_channels = v
+    return nn.Sequential(*layers)
+
+
+def load_pretrained_rotnet(model):
+    save_name = './models/rotnet_imagenet.pth'
+    url = 'https://dl.fbaipublicfiles.com/deepcluster/rotnet/rotnet_imagenet.pth'
+    
+    if not os.path.exists(save_name):
+        r = requests.get(url, allow_redirects=True)
+        open(save_name, 'wb').write(r.content)
+
+    checkpoint = torch.load(save_name)
+    checkpoint['state_dict'] = {rename_key(key): val
+                                for key, val
+                                in checkpoint['state_dict'].items()}
+
+    if 'pred_layer.weight' in checkpoint['state_dict']:
+        del checkpoint['state_dict']['pred_layer.weight']
+        del checkpoint['state_dict']['pred_layer.bias']
+    
+    model.load_state_dict(checkpoint['state_dict'])
+    print("succefully loaded")
+
+def rename_key(key):
+    "Remove module from key"
+    if not 'module' in key:
+        return key
+    if key.startswith('module.body.'):
+        return key[12:]
+    if key.startswith('module.'):
+        return key[7:]
+    return ''.join(key.split('.module'))
+
+    

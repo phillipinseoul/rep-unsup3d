@@ -45,6 +45,10 @@ class CelebA(Dataset):
         if np.random.rand() > 0.5:
             re_img = torch.flip(re_img, dims = [2])
 
+        if WITH_PERTURB:
+            #print("perturbing!")
+            re_img = asym_perturb(re_img)
+
         return re_img
 
     def __len__(self):
@@ -112,9 +116,56 @@ class BFM(Dataset):
         if np.random.rand() > 0.5:
             re_img = transforms.functional.hflip(re_img)
             re_depth = transforms.functional.hflip(re_depth)
+
+        if WITH_PERTURB:
+            re_img = asym_perturb(re_img)
         
         return re_img, re_depth
     
     def __len__(self):
         return len(self.img_gt_pairs)
         # return 64 * 100
+
+
+
+def asym_perturb(image_tensor):
+    '''
+    input:
+    - image_tensor : 3 x H x W (0~1)
+    return
+    - res : 3 x H x W (0~1)
+    '''
+    # We will call it during 
+    _, H, W = image_tensor.shape
+    random_color = torch.rand(3,1,1)
+    rand_alpha = np.random.rand(1)*(1.0 - 0.5) + 0.5    # transparency
+    rand_patch_size = np.random.rand(2)*(0.5-0.2) + 0.2
+
+    patch_H = int(rand_patch_size[0] * H)
+    patch_W = int(rand_patch_size[1] * W)
+
+    random_patch = get_rand_patch(H, W, patch_H, patch_W)
+    
+    alpha_patch = random_patch * rand_alpha
+    bg = image_tensor * (1. - alpha_patch)
+    fg = random_patch * random_color * alpha_patch
+
+    res = bg + fg
+
+    return res
+
+
+
+def get_rand_patch(H, W, P_H, P_W):
+    bg = torch.zeros(3, H, W)
+
+    rand_y = np.random.randint(0, H - P_H + 1)
+    rand_x = np.random.randint(0, W - P_W + 1)
+
+    bg[:,rand_y:(rand_y+P_H), rand_x:(rand_x+P_W)] = 1.0
+
+    return bg
+
+
+
+

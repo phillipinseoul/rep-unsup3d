@@ -28,8 +28,11 @@ class ImageDecomp(nn.Module):
         self.depth_border = nn.functional.pad(depth_pad, (2,2), mode = 'constant', value = 1.0)
         self.border_depth = 0.7 * 1.1 + 0.3 * 0.9
 
-        if use_conf:
+        if WITH_CONF:
             self.conf_net = Conf_Conv().to(device)
+
+        if not WITH_LIGHT:
+            self.shade_net = AutoEncoder(cout = 1).to(device)
 
     def get_depth_map(self, input):
         raw_res = self.depth_net(input)
@@ -53,4 +56,11 @@ class ImageDecomp(nn.Module):
         return self.view_net(input).squeeze(-1).squeeze(-1)
 
     def get_confidence(self, input):
-        return self.conf_net(input)
+        if WITH_CONF:
+            return self.conf_net(input)
+        else:
+            return None, None
+
+    def get_shade(self, input):
+        res = self.shade_net(input)
+        return (res + 1.)/2.
