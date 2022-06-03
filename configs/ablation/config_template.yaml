@@ -28,7 +28,7 @@ fig_plot_step: 2000
 plot_num: 32
 
 # chkpt option
-save_epoch: 10
+save_epoch: 29
 
 # gradient clip option
 gradient_clip: true

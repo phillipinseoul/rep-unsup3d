@@ -296,8 +296,6 @@ class PercepLoss(nn.Module):
             # load pretrained data
             self.layers = VGG16(dim_in=3)
             modules = [self.layers.features[i] for i in range(23)]
-
-
         
         # layer 15's output is ReLU3_3
        
