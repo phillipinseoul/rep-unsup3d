@@ -10,8 +10,11 @@ from tqdm import tqdm
 import time
 import os.path as path
 import os
+import yaml
+import glob
 import random
 import numpy as np
+import zipfile
 
 from unsup3d.__init__ import *
 from unsup3d.model import PhotoGeoAE
@@ -66,6 +69,26 @@ class Trainer():
         self.save_epoch = configs['save_epoch']
         self.fig_step = configs['fig_plot_step']
         print(f'logs stored at {self.exp_path}')
+
+        '''save codes and train settings'''
+        code_dir = path.dirname(os.path.realpath(__file__))
+        if not path.isdir(code_dir):
+            print("failed to dump running codes, dir : ", code_dir)
+        else:
+            z_f = zipfile.ZipFile(path.join(self.save_path, "dumped_code.zip"), 'w', zipfile.ZIP_DEFLATED)
+            flist = []
+            flist.extend(glob.glob(path.join(code_dir, '*'+".py"), recursive=True))
+            
+            for f in flist:
+                z_f.write(f)
+            z_f.close()
+
+
+        dump_yaml_name = path.join(self.exp_path, self.exp_name+'.yaml')
+        with open(dump_yaml_name, "w") as f:
+            yaml.safe_dump(configs, f)
+
+
 
         '''implement dataloader'''
         if configs['dataset'] == "celeba":
@@ -131,9 +154,11 @@ class Trainer():
                 self.save_model(epch_loss)      
                 self.best_loss = epch_loss
 
+            '''
             if self.epoch % self.save_epoch == 0 or self.epoch == (self.max_epoch - 1):
                 # save periodically
                 self.save_model(epch_loss)
+            '''
             self.writer.add_scalar("loss_epch/train", epch_loss, self.epoch)
 
     def _train(self):
@@ -148,12 +173,19 @@ class Trainer():
                 inputs = inputs.to(self.device)
             
             self.optimizer.zero_grad()
-            losses = self.model(inputs)
-            loss = torch.mean(losses)
+
+            if test_supervised:
+                loss = self.model(inputs)
+            else:
+                losses = self.model(inputs)
+                loss = torch.mean(losses)
+
             loss.backward()
 
             # add gradient clipping (06/01)
-            torch.nn.utils.clip_grad_norm_(self.model.imgDecomp.parameters(), max_norm=5)
+            if USE_GRADIENT_CLIP:
+                torch.nn.utils.clip_grad_norm_(self.model.imgDecomp.parameters(), max_norm=5)
+
             self.optimizer.step()
 
             # calculate epch_loss
@@ -167,7 +199,7 @@ class Trainer():
             cnt += 1
             self.step += 1
         
-        if use_sched:
+        if USE_SCHED:
             self.scheduler.step()
         return epch_loss/cnt
 

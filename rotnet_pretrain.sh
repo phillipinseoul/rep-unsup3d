@@ -1,0 +1,1 @@
+wget https://dl.fbaipublicfiles.com/deepcluster/rotnet/rotnet_imagenet.pth

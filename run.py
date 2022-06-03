@@ -15,6 +15,7 @@ def run(args):
     with open(args.configs) as f:
         configs = yaml.safe_load(f)
 
+    init_settings(configs)
     # load trainer
     trainer = Trainer(configs)
     print('start training!')
@@ -30,7 +31,7 @@ if __name__ == "__main__":
         '--configs', 
         help='Set configurations file path', 
         type=str, 
-        default='configs/celeba_train_v2.yaml'
+        default='configs/ablation/config_template.yaml'
     )
     
     # parser.add_argument('--num_workers', help='Set number of workers', type=int, default=4)
