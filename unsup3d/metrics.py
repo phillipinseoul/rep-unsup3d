@@ -5,27 +5,32 @@ Define SIDE, MAD metrics for evaluating the 3D reconstruction accuracy.
 import torch
 from .utils import ImageFormation
 
+EPS = 1e-7
+
 class BFM_Metrics():
-    def __init__(self, depth_ac, depth_gt, device="cuda"):
+    def __init__(self, depth_ac, depth_gt, mask, device="cuda"):
         '''
         - depth_ac: depth map of the actual (warped) view
         - depth_gt: ground truth depth map 
+        - mask: depth mask from gt_depth and org_depth
         '''
         self.depth_ac = depth_ac          # B x 1 x W x H
         self.depth_gt = depth_gt          # B x 1 x W x H
         self.device = device
+        self.mask = mask
 
     def SIDE_error(self):
         '''SIDE (scale-invariant depth error) between depth maps'''
         _, _, W, H = self.depth_ac.shape
 
-        del_uv = torch.log(self.depth_ac) - torch.log(self.depth_gt)
+        del_uv = torch.log(self.depth_ac + EPS) - torch.log(self.depth_gt + EPS)
+        del_uv = del_uv * self.mask
         
         temp_1 = torch.sum(del_uv ** 2) / (W * H)
         temp_2 = torch.sum(del_uv) / (W * H)
         
-        # side = torch.sqrt(temp_1 - (temp_2 ** 2))
-        side = temp_1 - (temp_2 ** 2)
+        side = torch.sqrt(temp_1 - (temp_2 ** 2))
+        side = (temp_1 - (temp_2 ** 2))
 
         return side                         
 
@@ -43,6 +48,7 @@ class BFM_Metrics():
         angle_deg = torch.rad2deg(angle_rad)
         
         # mean angle deviation
+        angle_deg = angle_deg * self.mask
         mad = torch.mean(angle_deg)
         return mad
 

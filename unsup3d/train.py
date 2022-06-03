@@ -1,5 +1,5 @@
 '''
-under implementation
+Train code for PhotoGeoAE
 '''
 import pstats
 import torch
@@ -16,7 +16,6 @@ import numpy as np
 from unsup3d.__init__ import *
 from unsup3d.model import PhotoGeoAE
 from unsup3d.dataloader import CelebA, BFM
-
 
 # initial configurations 
 random_seed = 0
@@ -66,7 +65,6 @@ class Trainer():
         self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
         self.save_epoch = configs['save_epoch']
         self.fig_step = configs['fig_plot_step']
-
         print(f'logs stored at {self.exp_path}')
 
         '''implement dataloader'''
@@ -82,8 +80,7 @@ class Trainer():
             batch_size= self.batch_size,
             shuffle=True,
             num_workers=8,
-            drop_last=True,         # (05/20, inhee) I'm not sure currently we can handle last epoch properly
-            collate_fn=collate_fn,
+            drop_last=True,             
         )
 
         if self.val_datasets is not None:
@@ -92,8 +89,7 @@ class Trainer():
                 batch_size= self.batch_size,
                 shuffle=False,
                 num_workers=8,
-                drop_last=True,         # (05/20, inhee) I'm not sure currently we can handle last epoch properly
-                collate_fn=collate_fn,
+                drop_last=True,         
             )
         
         '''select GPU'''
@@ -101,7 +97,7 @@ class Trainer():
 
         '''define model'''
         if is_debug:
-            self.model = model.to(self.device)                                  #### to debug
+            self.model = model.to(self.device)                                 
         else:
             self.model = PhotoGeoAE(configs).to(self.device)
         self.model.set_logger(self.writer)
@@ -124,7 +120,6 @@ class Trainer():
         if self.load_chk:
             self.load_model(self.load_path if self.load_path is not None else self.best_path)
         
-
     def train(self):
         init_epch = self.epoch
         for epch in range(init_epch, self.max_epoch):
@@ -133,16 +128,13 @@ class Trainer():
 
             if epch_loss < self.best_loss:
                 # save best model
-                self.save_model(epch_loss)
+                self.save_model(epch_loss)      
                 self.best_loss = epch_loss
 
             if self.epoch % self.save_epoch == 0 or self.epoch == (self.max_epoch - 1):
                 # save periodically
                 self.save_model(epch_loss)
-
             self.writer.add_scalar("loss_epch/train", epch_loss, self.epoch)
-
-            
 
     def _train(self):
         '''train model (single epoch)'''
@@ -168,7 +160,6 @@ class Trainer():
 
             # calculate epch_loss
             epch_loss += loss.detach().cpu()
-            
             self.writer.add_scalar("Loss_step/train", loss.detach().cpu().item(), self.step)
             self.model.loss_plot(self.step)
 
@@ -223,11 +214,3 @@ class Trainer():
         '''test model'''
         pass
 
-# handling exceptions in DataLoader __getitem__ (05/23 yuseung)
-# ref: https://github.com/pytorch/pytorch/issues/1137#issuecomment-618286571
-
-def collate_fn(batch):
-    filtered = list(filter(lambda x: x is not None, batch))
-    filtered = torch.utils.data.dataloader.default_collate(filtered)
-    
-    return filtered
