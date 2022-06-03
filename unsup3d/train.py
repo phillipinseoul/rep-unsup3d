@@ -154,11 +154,11 @@ class Trainer():
                 self.save_model(epch_loss)      
                 self.best_loss = epch_loss
 
-            '''
-            if self.epoch % self.save_epoch == 0 or self.epoch == (self.max_epoch - 1):
+            
+            if self.epoch % self.save_epoch == 0 and self.epoch != 0:
                 # save periodically
                 self.save_model(epch_loss)
-            '''
+            
             self.writer.add_scalar("loss_epch/train", epch_loss, self.epoch)
 
     def _train(self):
