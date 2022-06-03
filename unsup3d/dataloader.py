@@ -111,7 +111,7 @@ class BFM(Dataset):
         re_depth = torch.tensor(re_depth, dtype = torch.float32).unsqueeze(-1)
         re_depth = re_depth.permute(2, 0, 1)                  # 1 x H x W
         re_depth /= MAX_PIX                                   # change value range 0~1
-        re_depth = 1 - re_depth
+        re_depth = (1 - re_depth) * 0.2 + 0.9                 # depth: 0.9 ~1.1
 
         if np.random.rand() > 0.5:
             re_img = transforms.functional.hflip(re_img)
