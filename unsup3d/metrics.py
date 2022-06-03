@@ -26,11 +26,11 @@ class BFM_Metrics():
         del_uv = torch.log(self.depth_ac + EPS) - torch.log(self.depth_gt + EPS)
         del_uv = del_uv * self.mask
         
-        temp_1 = torch.sum(del_uv ** 2, dim = (1,2,3)) / (W * H)
-        temp_2 = torch.sum(del_uv, dim = (1,2,3)) / (W * H)
+        temp_1 = torch.sum(del_uv ** 2, dim = (1,2,3)) / torch.sum(self.mask, dim = (1,2,3))
+        temp_2 = torch.sum(del_uv, dim = (1,2,3)) / torch.sum(self.mask, dim = (1,2,3))
         
         side = torch.sqrt(temp_1 - (temp_2 ** 2))
-        side = (temp_1 - (temp_2 ** 2))
+        #side = (temp_1 - (temp_2 ** 2))
 
         return side.mean()                         
 
