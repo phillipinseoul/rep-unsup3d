@@ -10,8 +10,11 @@ from tqdm import tqdm
 import time
 import os.path as path
 import os
+import yaml
+import glob
 import random
 import numpy as np
+import zipfile
 
 from unsup3d.__init__ import *
 from unsup3d.model import PhotoGeoAE
@@ -66,6 +69,26 @@ class Trainer():
         self.save_epoch = configs['save_epoch']
         self.fig_step = configs['fig_plot_step']
         print(f'logs stored at {self.exp_path}')
+
+        '''save codes and train settings'''
+        code_dir = path.dirname(os.path.realpath(__file__))
+        if not path.isdir(code_dir):
+            print("failed to dump running codes, dir : ", code_dir)
+        else:
+            z_f = zipfile.ZipFile(path.join(self.save_path, "dumped_code.zip"), 'w', zipfile.ZIP_DEFLATED)
+            flist = []
+            flist.extend(glob.glob(path.join(code_dir, '*'+".py"), recursive=True))
+            
+            for f in flist:
+                z_f.write(f)
+            z_f.close()
+
+
+        dump_yaml_name = path.join(self.exp_path, self.exp_name+'.yaml')
+        with open(dump_yaml_name, "w") as f:
+            yaml.safe_dump(configs, f)
+
+
 
         '''implement dataloader'''
         if configs['dataset'] == "celeba":
@@ -169,7 +192,7 @@ class Trainer():
             cnt += 1
             self.step += 1
         
-        if use_sched:
+        if USE_SCHED:
             self.scheduler.step()
         return epch_loss/cnt
 
