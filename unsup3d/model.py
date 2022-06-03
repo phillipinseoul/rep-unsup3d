@@ -31,7 +31,7 @@ class PhotoGeoAE(nn.Module):
         self.alb_v = configs['alb_v']
         self.light_v = configs['light_v']
         self.view_v = configs['view_v']
-        self.use_gt_depth = WITH_GT_DEPTH    #configs['use_gt_depth']
+        self.use_gt_depth = configs['use_gt_depth']
         self.use_conf = WITH_CONF            #configs['use_conf']
         self.b_size = configs['batch_size']
 
@@ -168,8 +168,14 @@ class PhotoGeoAE(nn.Module):
             '''compute BFM metrics'''
             bfm_metrics = BFM_Metrics(org_depth, self.gt_depth, self.gt_depth_mask)
             self.side_error = bfm_metrics.SIDE_error()
+            self.side_error_v2 = bfm_metrics.SIDE_error_v2()
             self.mad_error = bfm_metrics.MAD_error()
 
+            if test_supervised:
+                L1_loss = torch.abs(self.gt_depth - self.org_depth)
+                L1_loss_masked = L1_loss * self.gt_depth_mask
+                return L1_loss_masked.sum() / (self.gt_depth_mask.sum() + EPS)
+                
         if torch_old:
             if self.tot_loss.isnan().sum() != 0:
                 assert(0)
@@ -274,8 +280,9 @@ class PhotoGeoAE(nn.Module):
         self.logger.add_scalar('debug/view ranss (abs mean)', (self.view.detach().cpu()[:, 3:5] * 0.1).abs().mean(), epoch)
         
         if self.use_gt_depth:
-            self.logger.add_scalar('losses/side_error', self.side_error, epoch)
-            self.logger.add_scalar('losses/mad_error', self.mad_error, epoch)
+            self.logger.add_scalar('error/side_error', self.side_error, epoch)
+            self.logger.add_scalar('error/side_error_v2', self.side_error_v2, epoch)
+            self.logger.add_scalar('error/mad_error', self.mad_error, epoch)
 
     def set_logger(self, writer):
         self.logger = writer

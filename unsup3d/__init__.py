@@ -9,6 +9,8 @@ test_ELU = False
 torch_old = True # debug option (default is true)
 USE_WIDER_DEPTH = False
 
+# options for SIDE, MAD baselines
+test_supervised = True
 
 # important settings
 USE_GRADIENT_CLIP = True

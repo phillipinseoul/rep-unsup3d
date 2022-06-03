@@ -5,8 +5,7 @@ batch_size: 64
 learning_rate: 0.0001
 run_train: true
 exp_name: bfm_ablation_template
-exp_path: experiments/bfm_train_add_mask
-chk_path: models/bfm_train
+exp_path: experiments/bfm_train
 
 img_size: 64
 
@@ -32,6 +31,7 @@ save_epoch: 29
 
 # gradient clip option
 gradient_clip: true
+use_gt_depth: true
 
 # load saved option
 load_chk: false
