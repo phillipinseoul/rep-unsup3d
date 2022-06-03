@@ -162,6 +162,11 @@ class PhotoGeoAE(nn.Module):
             self.side_error = bfm_metrics.SIDE_error()
             self.mad_error = bfm_metrics.MAD_error()
 
+            if test_supervised:
+                L1_loss = torch.abs(self.gt_depth - self.org_depth)
+                L1_loss_masked = L1_loss * self.gt_depth_mask
+                return L1_loss_masked.sum() / (self.gt_depth_mask.sum() + EPS)
+                
         if torch_old:
             if self.tot_loss.isnan().sum() != 0:
                 assert(0)

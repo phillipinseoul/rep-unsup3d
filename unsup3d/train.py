@@ -131,9 +131,11 @@ class Trainer():
                 self.save_model(epch_loss)      
                 self.best_loss = epch_loss
 
+            '''
             if self.epoch % self.save_epoch == 0 or self.epoch == (self.max_epoch - 1):
                 # save periodically
                 self.save_model(epch_loss)
+            '''
             self.writer.add_scalar("loss_epch/train", epch_loss, self.epoch)
 
     def _train(self):
@@ -148,8 +150,13 @@ class Trainer():
                 inputs = inputs.to(self.device)
             
             self.optimizer.zero_grad()
-            losses = self.model(inputs)
-            loss = torch.mean(losses)
+
+            if test_supervised:
+                loss = self.model(inputs)
+            else:
+                losses = self.model(inputs)
+                loss = torch.mean(losses)
+
             loss.backward()
 
             # add gradient clipping (06/01)
