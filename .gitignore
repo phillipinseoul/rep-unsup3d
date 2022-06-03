@@ -3,6 +3,7 @@ __pycache__
 *.jpg
 experiments/
 *.pt
+*.pth
 /human_face
 data/
 test_results/

@@ -161,7 +161,8 @@ class Trainer():
             loss.backward()
 
             # add gradient clipping (06/01)
-            torch.nn.utils.clip_grad_norm_(self.model.imgDecomp.parameters(), max_norm=5)
+            if USE_GRADIENT_CLIP:
+                torch.nn.utils.clip_grad_norm_(self.model.imgDecomp.parameters(), max_norm=5)
 
             self.optimizer.step()
 
