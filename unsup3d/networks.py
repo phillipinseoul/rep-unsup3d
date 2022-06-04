@@ -12,7 +12,7 @@ from unsup3d.__init__ import *
 # Image decompostion pipline
 class ImageDecomp(nn.Module):
     def __init__(self, device, W, H,
-                 depth_v, alb_v, light_v, view_v, use_conf):
+                 depth_v, alb_v, light_v, view_v, use_conf, use_light):
         super(ImageDecomp,self).__init__()
         if depth_v == 'depth_v0':
             self.depth_net = AutoEncoder(cout=1, no_activate = True).to(device)        # B x 1 x W x H
@@ -27,11 +27,16 @@ class ImageDecomp(nn.Module):
         depth_pad = torch.zeros(1,H,W-4).to(device)
         self.depth_border = nn.functional.pad(depth_pad, (2,2), mode = 'constant', value = 1.0)
         self.border_depth = 0.7 * 1.1 + 0.3 * 0.9
+        self.use_light = use_light
+        self.use_conf = use_conf
 
-        if WITH_CONF:
+        if self.use_conf:
             self.conf_net = Conf_Conv().to(device)
+        else:
+            self.conf_large = torch.zeros(1,2,H,W, dtype=torch.float32).to(device)
+            self.conf_small = torch.zeros(1,2,H//4,W//4, dtype=torch.float32).to(device)
 
-        if not WITH_LIGHT:
+        if not use_light:
             self.shade_net = AutoEncoder(cout = 1).to(device)
 
     def get_depth_map(self, input):
@@ -56,10 +61,11 @@ class ImageDecomp(nn.Module):
         return self.view_net(input).squeeze(-1).squeeze(-1)
 
     def get_confidence(self, input):
-        if WITH_CONF:
+        if self.use_conf:
             return self.conf_net(input)
         else:
-            return None, None
+            B = input.shape[0]
+            return self.conf_small.repeat(B,1,1,1), self.conf_large.repeat(B,1,1,1)
 
     def get_shade(self, input):
         res = self.shade_net(input)
