@@ -17,7 +17,7 @@ BFM_PATH = '/root/unsup3d-rep/data/synface'
 
 
 class CelebA(Dataset):
-    def __init__(self, setting = "train", img_size = 64):
+    def __init__(self, setting = "train", img_size = 64, w_perturb = False):
         '''check setting first'''
         if setting not in setting_list:
             print("CelebA, wrong data setting, you should select one of 'train', 'test' or 'val'.")
@@ -27,6 +27,8 @@ class CelebA(Dataset):
         self.path = path.join(CelebA_PATH, setting)
         self.file_list = [name for name in os.listdir(self.path) if path.isfile(path.join(self.path,name))]
         self.img_size = (img_size, img_size)
+
+        self.WITH_PERTURB = w_perturb
 
     def __getitem__(self, idx):
         '''
@@ -45,7 +47,7 @@ class CelebA(Dataset):
         if np.random.rand() > 0.5:
             re_img = torch.flip(re_img, dims = [2])
 
-        if WITH_PERTURB:
+        if self.WITH_PERTURB:
             #print("perturbing!")
             re_img = asym_perturb(re_img)
 
@@ -57,13 +59,15 @@ class CelebA(Dataset):
 
 
 class BFM(Dataset):
-    def __init__(self, setting = "train", img_size = 64, crop_rate = 0.125):
+    def __init__(self, setting = "train", img_size = 64, crop_rate = 0.125, w_perturb = False):
         '''check setting first'''
         if setting not in setting_list:
             print("BFM, wrong data setting, you should select one of 'train', 'test' or 'val'.")
             print("you have selected : ", setting)
             assert(0)
 
+        self.WITH_PERTURB = w_perturb
+        
         self.path = path.join(BFM_PATH, setting)
         self.img_path = path.join(self.path, 'image')       # path for images
         self.gt_path = path.join(self.path, 'depth')        # path for ground truth depth maps
@@ -117,8 +121,8 @@ class BFM(Dataset):
             re_img = transforms.functional.hflip(re_img)
             re_depth = transforms.functional.hflip(re_depth)
 
-        if WITH_PERTURB:
-            re_img = asym_perturb(re_img)
+        if self.WITH_PERTURB:
+           re_img = asym_perturb(re_img)
         
         return re_img, re_depth
     
@@ -152,7 +156,7 @@ def asym_perturb(image_tensor):
 
     res = bg + fg
 
-    return res
+    return res.float()
 
 
 
