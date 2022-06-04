@@ -23,7 +23,7 @@ write_logs: true
 
 # visualize option
 plot_size: 256
-fig_plot_step: 2000
+fig_plot_step: 500
 plot_num: 32
 
 # chkpt option
@@ -46,5 +46,5 @@ with_conf: true
 
 # ablation option (default false)
 with_self_sup_percep: false
-with_gt_depth: true
+with_gt_depth: false
 with_perturb: false

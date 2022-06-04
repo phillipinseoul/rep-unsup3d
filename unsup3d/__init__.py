@@ -12,6 +12,9 @@ USE_WIDER_DEPTH = False
 # options for SIDE, MAD baselines
 test_supervised = False
 USE_GRADIENT_CLIP = True
+
+VISUALIZE_RESULTS = True
+
 '''
 # important settings
 USE_GRADIENT_CLIP = True

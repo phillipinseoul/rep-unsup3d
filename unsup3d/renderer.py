@@ -5,10 +5,12 @@ from neural_renderer import Renderer
 from unsup3d.utils import *
 from unsup3d.__init__ import *
 
+from skimage.io import imread, imsave
+import imageio
+
 
 BATCH_SIZE = 64
 DEPTH_ALLOW_MARGIN = 0.2        # originally, it's 0.1
-
 
 class RenderPipeline(nn.Module):
     def __init__(self, device = torch.device("cuda"), b_size = BATCH_SIZE, args = None):
@@ -250,8 +252,6 @@ class RenderPipeline(nn.Module):
             padding_mode = 'zeros',
             align_corners = True
         )
-        
-
         return org_img
 
 
@@ -270,7 +270,6 @@ class RenderPipeline(nn.Module):
         views = views.squeeze()
         rotates = views[:,0:3]            # B x 3, (-1.0  ~ 1.0)
         rotates = rotates * 60.0        # B x 3, (-60.0 ~ 60.0)
-        #rotates = rotates * 180.0 / math.pi
         trans = views[:,3:6]                # B x 3, (-1.0  ~ 1.0)
         trans = trans / 10.0                # B x 3, (-0.1  ~ 0.1)
         trans[:,2:3]= 0                       # z-translation range (0)
