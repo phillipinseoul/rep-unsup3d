@@ -23,7 +23,7 @@ write_logs: true
 
 # visualize option
 plot_size: 256
-fig_plot_step: 500
+fig_plot_step: 1000
 plot_num: 32
 
 # chkpt option

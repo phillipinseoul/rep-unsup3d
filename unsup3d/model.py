@@ -200,8 +200,8 @@ class PhotoGeoAE(nn.Module):
         if VISUALIZE_RESULTS:
             B, _, W, H = self.depth.shape
             visualizer = Visualization(self, self.render)
-            self.canon_im_rotate = visualizer.render_result(self.canon_img, self.depth, maxr=90).detach().cpu() /2.+0.5  # (B,T,C,H,W)
-            self.canon_normal_rotate = visualizer.render_result(self.normal.permute(0,3,1,2), self.depth, maxr=90).detach().cpu() /2.+0.5  # (B,T,C,H,W)
+            self.canon_im_rotate = visualizer.render_result(self.canon_img, self.depth).detach().cpu() /2.+0.5  # (B,T,C,H,W)
+            self.canon_normal_rotate = visualizer.render_result(self.normal.permute(0,3,1,2), self.depth).detach().cpu() /2.+0.5  # (B,T,C,H,W)
 
         return self.tot_loss
 
