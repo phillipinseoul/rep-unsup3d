@@ -3,9 +3,9 @@ dataset: bfm
 num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
-run_train: true
-exp_name: bfm_ablation_template
-exp_path: experiments/bfm_train
+run_train: false
+exp_name: bfm_test
+exp_path: experiments/bfm_test
 
 img_size: 64
 
@@ -34,8 +34,8 @@ gradient_clip: true
 use_gt_depth: true
 
 # load saved option
-load_chk: false
-load_path: experiments/bfm_train/celeba_train_v0_05_21__13_29/models/best.pt
+load_chk: true
+load_path: /root/unsup3d-rep/experiments/bfm_ablation/bfm_wo_depth_flip_06_03__16_52/models/best.pt
 
 # ablation option (default true)
 with_abledo_flip: true

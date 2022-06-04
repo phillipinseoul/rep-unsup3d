@@ -32,7 +32,7 @@ class BFM_Metrics():
         side = torch.sqrt(temp_1 - (temp_2 ** 2))
         #side = (temp_1 - (temp_2 ** 2))
 
-        return side.mean()                         
+        return side                       
 
     def SIDE_error_v2(self):
         del_uv = torch.log(self.depth_ac + EPS) - torch.log(self.depth_gt + EPS)
@@ -43,7 +43,7 @@ class BFM_Metrics():
         side = torch.sum((del_uv - temp)**2, dim = (1,2,3)) / torch.sum(self.mask, dim = (1,2,3))
         side = torch.sqrt(side)
 
-        return side.mean()
+        return side
 
     def MAD_error(self):
         '''MAD (mean angle deviation) between normal maps'''
@@ -55,13 +55,13 @@ class BFM_Metrics():
 
         # compute angle deviations
         inner = normal_ac * normal_gt
-        angle_rad = torch.arccos(torch.sum(inner, dim=1, keepdim=True))
+        inner = torch.sum(inner, dim=1, keepdim = True).clamp(-1,1)
+        angle_rad = torch.arccos(inner)
         angle_deg = torch.rad2deg(angle_rad)
         
         # mean angle deviation
         angle_deg = angle_deg * self.mask
-        mad = torch.mean(angle_deg)
-        return mad
+        return angle_deg
 
 
 

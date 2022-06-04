@@ -15,11 +15,16 @@ def run(args):
     with open(args.configs) as f:
         configs = yaml.safe_load(f)
 
-    init_settings(configs)
+    #init_settings(configs)
     # load trainer
     trainer = Trainer(configs)
-    print('start training!')
-    trainer.train()
+    
+    if configs['run_train']:
+        print('start training!')
+        trainer.train()
+    else:
+        print('start testing!')
+        trainer.test()
     print('run complete!')
 
 
@@ -27,6 +32,7 @@ def run(args):
 if __name__ == "__main__":
     # set configurations
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         '--configs', 
         help='Set configurations file path', 
@@ -38,6 +44,5 @@ if __name__ == "__main__":
     # parser.add_argument('--use_gpu', help='Set the usage of GPU', type=bool, default=True)
     '''TODO: add more arguments'''
     args = parser.parse_args()
-
     
     run(args)
