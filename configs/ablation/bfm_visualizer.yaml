@@ -1,0 +1,50 @@
+# trainer
+dataset: bfm
+num_epochs: 30
+batch_size: 64
+learning_rate: 0.0001
+run_train: true
+exp_name: bfm_visualizer
+exp_path: experiments/bfm_train
+
+img_size: 64
+
+# light configs
+lambda_p: 1.0
+lambda_f: 0.5
+
+# network versions
+depth_v: depth_v0
+alb_v: alb_v0
+light_v: light_v0
+view_v: view_v0
+
+write_logs: true
+
+# visualize option
+plot_size: 256
+fig_plot_step: 2000
+plot_num: 32
+
+# chkpt option
+save_epoch: 29
+
+# gradient clip option
+gradient_clip: true
+use_gt_depth: true
+
+# load saved option
+load_chk: false
+load_path: experiments/bfm_train/celeba_train_v0_05_21__13_29/models/best.pt
+
+# ablation option (default true)
+with_abledo_flip: true
+with_depth_flip: true
+with_light: true
+with_percep: true
+with_conf: true
+
+# ablation option (default false)
+with_self_sup_percep: false
+with_gt_depth: true
+with_perturb: false

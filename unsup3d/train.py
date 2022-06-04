@@ -241,6 +241,18 @@ class Trainer():
                 losses = self.model(inputs)
 
     def _test(self):
-        '''test model'''
-        pass
+        ############################## borrowed from author's code! ##############################
+        # https://github.com/elliottwu/unsup3d
+        """ Perform testing. """
+        self.model.to_device(self.device)
+        self.current_epoch = self.load_checkpoint(optim=False)
+        if self.test_result_dir is None:
+            self.test_result_dir = os.path.join(self.checkpoint_dir, f'test_results_{self.checkpoint_name}'.replace('.pth',''))
+        print(f"Saving testing results to {self.test_result_dir}")
 
+        with torch.no_grad():
+            m = self.run_epoch(self.test_loader, epoch=self.current_epoch, is_test=True)
+
+        score_path = os.path.join(self.test_result_dir, 'eval_scores.txt')
+        self.model.save_scores(score_path)
+        ############################## borrowed from author's code! ##############################

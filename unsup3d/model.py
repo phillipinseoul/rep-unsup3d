@@ -19,6 +19,9 @@ from unsup3d.renderer import *
 from unsup3d.metrics import BFM_Metrics
 from unsup3d.utils import get_mask
 from unsup3d.__init__ import *
+from unsup3d.render_results import *
+
+VISUALIZE_RESULTS = True
 
 class PhotoGeoAE(nn.Module):
     def __init__(self, configs):
@@ -181,7 +184,15 @@ class PhotoGeoAE(nn.Module):
                 assert(0)
             elif self.tot_loss.isinf().sum() != 0:
                 assert(0)
-        
+
+        if VISUALIZE_RESULTS:
+            B, _, W, H = self.depth.shape
+            visualizer = Visualization(self, self.render)
+            v0 = torch.FloatTensor([-0.1*math.pi/180*60,0,0,0,0,0]).to(self.input.device)
+            self.canon_im_rotate = visualizer.render_yaw(self.canon_img, self.depth, v_before=v0, maxr=90).detach().cpu() /2.+0.5  # (B,T,C,H,W)
+            self.canon_normal_rotate = visualizer.render_yaw(self.normal.permute(0,3,1,2), self.depth, v_before=v0, maxr=90).detach().cpu() /2.+0.5  # (B,T,C,H,W)
+            print('hello!!!')
+
         return self.tot_loss
 
     def logger(self, losses, step):
@@ -236,6 +247,9 @@ class PhotoGeoAE(nn.Module):
         add_image_log('to_debug/depth_mask', self.mask_depth, epoch)
 
         add_image_log('image_decomposition/input_img', self.input, epoch)
+
+        if VISUALIZE_RESULTS:
+            add_image_log('visualization/recon_side', self.canon_im_rotate[:,0,:,:,:])
 
         if self.use_gt_depth:
             add_image_log('image_decomposition/gt_depth', self.gt_depth, epoch)
