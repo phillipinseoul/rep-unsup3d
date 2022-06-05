@@ -265,6 +265,9 @@ class PhotoGeoAE(nn.Module):
             add_image_log('visualization/rotation_4', self.canon_im_rotate[:,3,:,:,:], epoch)
             add_image_log('visualization/rotation_5', self.canon_im_rotate[:,4,:,:,:], epoch)
             add_image_log('visualization/rotation_6', self.canon_im_rotate[:,5,:,:,:], epoch)
+            add_image_log('visualization/rotation_7', self.canon_im_rotate[:,6,:,:,:], epoch)
+            add_image_log('visualization/rotation_8', self.canon_im_rotate[:,7,:,:,:], epoch)
+            add_image_log('visualization/no_rotation', self.canon_im_rotate[:,8,:,:,:], epoch)
 
         if self.use_gt_depth:
             add_image_log('image_decomposition/gt_depth', self.gt_depth, epoch)
