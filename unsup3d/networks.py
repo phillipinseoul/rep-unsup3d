@@ -33,8 +33,8 @@ class ImageDecomp(nn.Module):
         if self.use_conf:
             self.conf_net = Conf_Conv().to(device)
         else:
-            self.conf_large = torch.zeros(1,2,H,W, dtype=torch.float32).to(device)
-            self.conf_small = torch.zeros(1,2,H//4,W//4, dtype=torch.float32).to(device)
+            self.conf_large = torch.ones(1,2,H,W, dtype=torch.float32).to(device)
+            self.conf_small = torch.ones(1,2,H//4,W//4, dtype=torch.float32).to(device)
 
         if not use_light:
             self.shade_net = AutoEncoder(cout = 1).to(device)

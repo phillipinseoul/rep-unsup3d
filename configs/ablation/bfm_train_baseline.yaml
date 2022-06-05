@@ -1,0 +1,39 @@
+alb_v: alb_v0
+batch_size: 64
+dataset: bfm
+depth_v: depth_v0
+exp_name: bfm_train_baseline
+exp_path: experiments/bfm_train
+fig_plot_step: 2000
+gradient_clip: true
+
+img_size: 64
+
+lambda_f: 0.5
+lambda_p: 1.0
+
+learning_rate: 0.0001
+light_v: light_v0
+
+load_chk: false
+load_path: /root/unsup3d-rep/experiments/bfm_ablation/bfm_baseline_06_04__15_22/models/best.pt
+
+num_epochs: 30
+plot_num: 32
+plot_size: 256
+
+run_train: true
+save_epoch: 29
+use_gt_depth: true
+view_v: view_v0
+
+with_abledo_flip: true
+with_conf: true
+with_depth_flip: true
+with_gt_depth: false
+with_light: true
+with_percep: true
+with_perturb: false
+with_self_sup_percep: false
+
+write_logs: true

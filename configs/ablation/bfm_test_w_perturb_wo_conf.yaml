@@ -4,7 +4,7 @@ num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
 run_train: false
-exp_name: bfm_test_w_perturb_w_conf
+exp_name: bfm_w_perturb_wo_conf
 exp_path: experiments/bfm_test
 
 img_size: 64
@@ -35,14 +35,14 @@ use_gt_depth: true
 
 # load saved option
 load_chk: true
-load_path: /root/unsup3d-rep/experiments/bfm_train/best.pt
+load_path: /root/unsup3d-rep/experiments/bfm_train/bfm_w_perturb_wo_conf_06_04__11_46/models/best.pt
 
 # ablation option (default true)
 with_abledo_flip: true
 with_depth_flip: true
 with_light: true
 with_percep: true
-with_conf: true
+with_conf: false
 
 # ablation option (default false)
 with_self_sup_percep: false
