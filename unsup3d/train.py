@@ -255,15 +255,15 @@ class Trainer():
                 losses = self.model(inputs)
 
                 if i == 0:
-                    tot_side_err = self.model.side_error.view(-1)
-                    tot_side_err_v2 = self.model.side_error_v2.view(-1)
-                    tot_mad_err = self.model.mad_error.view(-1)
+                    tot_side_err = self.model.side_error_.view(-1)
+                    tot_side_err_v2 = self.model.side_error_v2_.view(-1)
+                    tot_mad_err = self.model.mad_error_.view(-1)
                     iter_cnt = 1
                 else:
                     iter_cnt += 1
-                    tot_mad_err = torch.cat([tot_mad_err, self.model.mad_error], dim=0)
-                    tot_side_err = torch.cat([tot_side_err, self.model.side_error], dim=0)
-                    tot_side_err_v2 = torch.cat([tot_side_err_v2, self.model.side_error_v2], dim=0)
+                    tot_mad_err = torch.cat([tot_mad_err, self.model.mad_error_], dim=0)
+                    tot_side_err = torch.cat([tot_side_err, self.model.side_error_], dim=0)
+                    tot_side_err_v2 = torch.cat([tot_side_err_v2, self.model.side_error_v2_], dim=0)
         
         print("--------------------------------------------------")
         print("side err mean: ", tot_side_err.mean(), "side err std: ", tot_side_err.std())
@@ -278,6 +278,7 @@ class Trainer():
         
         with torch.no_grad():
             for i, inputs in tqdm(enumerate(self.test_dataloader, 0)):
+
                 if self.model.use_gt_depth:
                     inputs[0] = inputs[0].to(self.device)
                     inputs[1] = inputs[1].to(self.device)
@@ -295,16 +296,24 @@ class Trainer():
                     tot_mad_err = torch.cat([tot_mad_err, self.model.mad_error_.view(-1)], dim=0)
                     tot_side_err = torch.cat([tot_side_err, self.model.side_error_.view(-1)], dim=0)
                     tot_side_err_v2 = torch.cat([tot_side_err_v2, self.model.side_error_v2_.view(-1)], dim=0)
-        
+
+                loss = losses.mean()
+                self.writer.add_scalar("Loss_step/test", loss.detach().cpu().item(), self.step)
+                self.model.loss_plot(i)
+
+                if i % 100 == 0:
+                    self.model.visualize(i)
         print("--------------------------------------------------")
         print("side err mean: ", tot_side_err.mean().cpu().item(), "side err std: ", tot_side_err.std().cpu().item())
         print("side err v2 mean: ", tot_side_err_v2.mean().cpu().item(), "side err v2 std: ", tot_side_err_v2.std().cpu().item())
         print("mad err mean: ", tot_mad_err.mean().cpu().item(), "mad err std: ", tot_mad_err.std().cpu().item())
         print("--------------------------------------------------")
 
+        '''
         with torch.no_grad():
             m = self.run_epoch(self.test_loader, epoch=self.current_epoch, is_test=True)
 
         score_path = os.path.join(self.test_result_dir, 'eval_scores.txt')
         self.model.save_scores(score_path)
         ############################## borrowed from author's code! ##############################
+        '''
