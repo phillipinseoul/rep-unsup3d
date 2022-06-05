@@ -25,6 +25,7 @@ class CelebA(Dataset):
             assert(0)
         
         self.path = path.join(CelebA_PATH, setting)
+        self.is_train = True if setting == "train" else False
         self.file_list = [name for name in os.listdir(self.path) if path.isfile(path.join(self.path,name))]
         self.img_size = (img_size, img_size)
 
@@ -44,7 +45,7 @@ class CelebA(Dataset):
         re_img = re_img.permute(2,0,1)                  # 3 x H x W
         re_img /= MAX_PIX                               # change value range 0~1
         
-        if np.random.rand() > 0.5:
+        if self.is_train and np.random.rand() > 0.5:
             re_img = torch.flip(re_img, dims = [2])
 
         if self.WITH_PERTURB:
@@ -64,8 +65,11 @@ class BFM(Dataset):
             print("BFM, wrong data setting, you should select one of 'train', 'test' or 'val'.")
             print("you have selected : ", setting)
             assert(0)
+        
+        self.is_train = True if setting == "train" else False
 
         self.WITH_PERTURB = w_perturb
+        self.crop = 170
         
         self.path = path.join(BFM_PATH, setting)
         self.img_path = path.join(self.path, 'image')       # path for images
@@ -86,14 +90,40 @@ class BFM(Dataset):
 
         self.img_gt_pairs = img_gt_pairs
 
-    def __getitem__(self, idx):
-        '''return both image and gt depth_map as tensor.'''
+    def transform(self, img, hflip=False):
+        if self.crop is not None:
+            if isinstance(self.crop, int):
+                img = transforms.CenterCrop(self.crop)(img)
+            else:
+                assert len(self.crop) == 4, 'Crop size must be an integer for center crop, or a list of 4 integers (y0,x0,h,w)'
+                img = transforms.functional.crop(img, *self.crop)
+        img = transforms.functional.resize(img, (64, 64))
+        if hflip:
+            img = transforms.functional.hflip(img)
+        return transforms.functional.to_tensor(img)
 
-        '''crop settings'''
+    def __getitem__(self, index):
+        path_A = path.join(self.img_path, self.img_gt_pairs[index][0])
+        path_B = path.join(self.gt_path, self.img_gt_pairs[index][1])
+        img_A = Image.open(path_A).convert('RGB')
+        img_B = Image.open(path_B).convert('RGB')
+        hflip = self.is_train and (np.random.rand() > 0.5)
+
+        img = self.transform(img_A, hflip=hflip)
+        depth = self.transform(img_B, hflip=hflip)
+        depth = (1-depth) * 0.2 + 0.9
+        
+        return img, depth[0:1,:,:]
+
+    '''
+    def __getitem__(self, idx):
+        #return both image and gt depth_map as tensor.
+
+        #crop settings
         top = int(self.img_size[0] * self.crop_rate)            # crop out `crop_rate` of top, bottom, left, right
         bottom = int(self.img_size[0] * (1-self.crop_rate))
 
-        '''resize image'''
+        #resize image
         img = cv2.imread(path.join(self.img_path, self.img_gt_pairs[idx][0]))
 
         re_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -104,17 +134,20 @@ class BFM(Dataset):
         re_img = re_img.permute(2, 0, 1)                    # 3 x H x W
         re_img /= MAX_PIX                                   # change value range 0~1
 
-        '''resize gt depth map'''
+        #resize gt depth map
         gt_depth = cv2.imread(path.join(self.gt_path, self.img_gt_pairs[idx][1]))
         
-        re_depth = cv2.cvtColor(gt_depth, cv2.COLOR_BGR2GRAY)
+        #re_depth = cv2.cvtColor(gt_depth, cv2.COLOR_BGR2GRAY)
+        re_depth = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
         re_depth = re_depth[top:bottom, top:bottom]                 # add image cropping
         re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
-        re_depth = torch.tensor(re_depth, dtype = torch.float32).unsqueeze(-1)
+        re_depth = torch.tensor(re_depth, dtype = torch.float32)#.unsqueeze(-1)
         re_depth = re_depth.permute(2, 0, 1)                  # 1 x H x W
         re_depth /= MAX_PIX                                   # change value range 0~1
         re_depth = (1 - re_depth) * 0.2 + 0.9                 # depth: 0.9 ~1.1
+        re_depth = re_depth[0:1,:,:]
+
 
         if np.random.rand() > 0.5:
             re_img = transforms.functional.hflip(re_img)
@@ -124,7 +157,7 @@ class BFM(Dataset):
            re_img = asym_perturb(re_img)
         
         return re_img, re_depth
-    
+    '''
     def __len__(self):
         return len(self.img_gt_pairs)
         # return 64 * 100
