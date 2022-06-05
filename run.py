@@ -32,6 +32,7 @@ def run(args):
 if __name__ == "__main__":
     # set configurations
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         '--configs', 
         help='Set configurations file path', 
@@ -43,6 +44,5 @@ if __name__ == "__main__":
     # parser.add_argument('--use_gpu', help='Set the usage of GPU', type=bool, default=True)
     '''TODO: add more arguments'''
     args = parser.parse_args()
-
     
     run(args)

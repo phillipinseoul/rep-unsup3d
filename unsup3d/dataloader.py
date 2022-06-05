@@ -48,7 +48,6 @@ class CelebA(Dataset):
             re_img = torch.flip(re_img, dims = [2])
 
         if self.WITH_PERTURB:
-            #print("perturbing!")
             re_img = asym_perturb(re_img)
 
         return re_img

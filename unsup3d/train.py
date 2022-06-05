@@ -43,6 +43,7 @@ class Trainer():
         self.learning_rate = configs['learning_rate']
         self.is_train = configs['run_train']
         self.load_chk = configs['load_chk']
+        self.WITH_PERTURB = configs['with_perturb']
 
         if self.load_chk:
             self.load_path = configs['load_path']
@@ -88,17 +89,15 @@ class Trainer():
         with open(dump_yaml_name, "w") as f:
             yaml.safe_dump(configs, f)
 
-
-
         '''implement dataloader'''
         if configs['dataset'] == "celeba":
-            self.datasets = CelebA(setting = 'train')
-            self.val_datasets = CelebA(setting = 'val')
-            self.test_datasets = CelebA(setting = 'test')
+            self.datasets = CelebA(setting='train', w_perturb=self.WITH_PERTURB)
+            self.val_datasets = CelebA(setting='val',  w_perturb=self.WITH_PERTURB)
+            self.test_datasets = CelebA(setting='test',  w_perturb=self.WITH_PERTURB)
         elif configs['dataset'] == "bfm":
-            self.datasets = BFM(setting = 'train')
-            self.val_datasets = BFM(setting = 'val')
-            self.test_datasets = BFM(setting = 'test')
+            self.datasets = BFM(setting='train',  w_perturb=self.WITH_PERTURB)
+            self.val_datasets = BFM(setting='val',  w_perturb=self.WITH_PERTURB)
+            self.test_datasets = BFM(setting='test',  w_perturb=self.WITH_PERTURB)
 
         self.dataloader = DataLoader(
             self.datasets,
@@ -276,7 +275,6 @@ class Trainer():
         '''test model'''
         '''validate model and plot testing images'''
         self.model.eval()
-
         
         with torch.no_grad():
             for i, inputs in tqdm(enumerate(self.test_dataloader, 0)):
@@ -304,3 +302,9 @@ class Trainer():
         print("mad err mean: ", tot_mad_err.mean().cpu().item(), "mad err std: ", tot_mad_err.std().cpu().item())
         print("--------------------------------------------------")
 
+        with torch.no_grad():
+            m = self.run_epoch(self.test_loader, epoch=self.current_epoch, is_test=True)
+
+        score_path = os.path.join(self.test_result_dir, 'eval_scores.txt')
+        self.model.save_scores(score_path)
+        ############################## borrowed from author's code! ##############################

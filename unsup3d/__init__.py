@@ -12,6 +12,9 @@ USE_WIDER_DEPTH = False
 # options for SIDE, MAD baselines
 test_supervised = False
 USE_GRADIENT_CLIP = True
+
+VISUALIZE_RESULTS = True
+
 '''
 # important settings
 USE_GRADIENT_CLIP = True
@@ -23,7 +26,7 @@ WITH_ALBEDO_FLIP = True #done
 WITH_DEPTH_FLIP = True  #done
 WITH_LIGHT = True   # predict shading map directly ()
 WITH_PERCEP = True  # done
-WITH_CONF = True    # done
+WITH_CONF = False    # done
 
 WITH_SELF_SUP_PERCEP = False    # done
 WITH_GT_DEPTH = False
