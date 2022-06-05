@@ -10,6 +10,7 @@ class Visualization():
     def __init__(self, model, renderer):
         self.model = model
         self.views = model.view
+        self.shading = model.shading
         self.renderer = renderer
 
     def render_result(self, canon_img, depth):
@@ -24,6 +25,7 @@ class Visualization():
 
             canon_pc = self.renderer.canon_depth_to_3d(depth)
             img_trans = []
+            sha_trans = []
 
             rot_1 = torch.FloatTensor([60., 0., 0.]).repeat(b, 1).to(views.device)
             rot_2 = torch.FloatTensor([-60., 0., 0.]).repeat(b, 1).to(views.device)
@@ -35,7 +37,11 @@ class Visualization():
                 org_pc = self.renderer.canon_3d_to_org_3d(canon_pc, rot, trans)
                 org_depth = self.renderer.org_3d_to_org_depth(org_pc)
                 warp_grid = self.renderer.get_warp_grid(org_depth)
-                org_img = self.renderer.get_org_image(warp_grid, canon_img)
-                img_trans.append(org_img)
 
-            return torch.stack(img_trans, 1)        # b x t x c x h x w
+                org_img = self.renderer.get_org_image(warp_grid, canon_img)
+                org_sha = self.renderer.get_org_image(warp_grid, self.shading)
+
+                img_trans.append(org_img)
+                sha_trans.append(org_sha)
+
+            return torch.stack(img_trans, 1), torch.stack(sha_trans, 1)        # b x t x c x h x w

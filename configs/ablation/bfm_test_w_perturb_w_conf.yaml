@@ -5,8 +5,7 @@ batch_size: 64
 learning_rate: 0.0001
 run_train: false
 exp_name: bfm_test_w_perturb_w_conf
-
-test_result_dir: 
+exp_path: experiments/bfm_test
 
 img_size: 64
 

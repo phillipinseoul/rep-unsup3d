@@ -200,8 +200,10 @@ class PhotoGeoAE(nn.Module):
         if VISUALIZE_RESULTS:
             B, _, W, H = self.depth.shape
             visualizer = Visualization(self, self.render)
-            self.canon_im_rotate = visualizer.render_result(self.canon_img, self.depth).detach().cpu() /2.+0.5  # (B,T,C,H,W)
-            self.canon_normal_rotate = visualizer.render_result(self.normal.permute(0,3,1,2), self.depth).detach().cpu() /2.+0.5  # (B,T,C,H,W)
+            self.canon_im_rotate, self.shading_rotate = visualizer.render_result(self.canon_img, self.depth)  # (B,T,C,H,W)
+            self.canon_im_rotate = self.canon_im_rotate.detach().cpu() /2.+0.5
+            self.shading_rotate = self.shading_rotate.detach().cpu() /2.+0.5
+            # self.canon_normal_rotate = visualizer.render_result(self.normal.permute(0,3,1,2), self.depth).detach().cpu() /2.+0.5  # (B,T,C,H,W)
 
         return self.tot_loss
 
@@ -268,6 +270,16 @@ class PhotoGeoAE(nn.Module):
             add_image_log('visualization/rotation_7', self.canon_im_rotate[:,6,:,:,:], epoch)
             add_image_log('visualization/rotation_8', self.canon_im_rotate[:,7,:,:,:], epoch)
             add_image_log('visualization/no_rotation', self.canon_im_rotate[:,8,:,:,:], epoch)
+
+            add_image_log('visualization/sha_rotation_1', self.shading_rotate[:,0,:,:,:], epoch)
+            add_image_log('visualization/sha_rotation_2', self.shading_rotate[:,1,:,:,:], epoch)
+            add_image_log('visualization/sha_rotation_3', self.shading_rotate[:,2,:,:,:], epoch)
+            add_image_log('visualization/sha_rotation_4', self.shading_rotate[:,3,:,:,:], epoch)
+            add_image_log('visualization/sha_rotation_5', self.shading_rotate[:,4,:,:,:], epoch)
+            add_image_log('visualization/sha_rotation_6', self.shading_rotate[:,5,:,:,:], epoch)
+            add_image_log('visualization/sha_rotation_7', self.shading_rotate[:,6,:,:,:], epoch)
+            add_image_log('visualization/sha_rotation_8', self.shading_rotate[:,7,:,:,:], epoch)
+            add_image_log('visualization/sha_no_rotation', self.shading_rotate[:,8,:,:,:], epoch)
 
         if self.use_gt_depth:
             add_image_log('image_decomposition/gt_depth', self.gt_depth, epoch)
