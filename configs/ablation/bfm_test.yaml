@@ -4,7 +4,7 @@ num_epochs: 30
 batch_size: 64
 learning_rate: 0.0001
 run_train: false
-exp_name: bfm_test
+exp_name: bfm_wo_depth_flip_test
 exp_path: experiments/bfm_test
 
 img_size: 64
@@ -35,7 +35,7 @@ use_gt_depth: true
 
 # load saved option
 load_chk: true
-load_path: /root/unsup3d-rep/experiments/bfm_ablation/bfm_wo_depth_flip_06_03__16_52/models/best.pt
+load_path: /root/unsup3d-rep/experiments/bfm_ablation/bfm_baseline_06_04__15_22/models/best.pt
 
 # ablation option (default true)
 with_abledo_flip: true

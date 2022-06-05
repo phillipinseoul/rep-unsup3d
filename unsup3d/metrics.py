@@ -61,6 +61,8 @@ class BFM_Metrics():
         
         # mean angle deviation
         angle_deg = angle_deg * self.mask
+        angle_deg = angle_deg.sum(dim = (1,2,3)) / self.mask.sum(dim = (1,2,3))
+
         return angle_deg
 
 

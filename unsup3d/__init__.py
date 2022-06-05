@@ -13,7 +13,7 @@ USE_WIDER_DEPTH = False
 test_supervised = False
 USE_GRADIENT_CLIP = True
 
-VISUALIZE_RESULTS = True
+VISUALIZE_RESULTS = False
 
 '''
 # important settings
