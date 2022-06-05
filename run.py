@@ -37,7 +37,7 @@ if __name__ == "__main__":
         '--configs', 
         help='Set configurations file path', 
         type=str, 
-        default='configs/ablation/config_template.yaml'
+        default='configs/ablation/bfm_test.yaml'
     )
     
     # parser.add_argument('--num_workers', help='Set number of workers', type=int, default=4)
