@@ -256,15 +256,15 @@ class Trainer():
                 losses = self.model(inputs)
 
                 if i == 0:
-                    tot_side_err = self.model.side_error.view(-1)
-                    tot_side_err_v2 = self.model.side_error_v2.view(-1)
-                    tot_mad_err = self.model.mad_error.view(-1)
+                    tot_side_err = self.model.side_error_.view(-1)
+                    tot_side_err_v2 = self.model.side_error_v2_.view(-1)
+                    tot_mad_err = self.model.mad_error_.view(-1)
                     iter_cnt = 1
                 else:
                     iter_cnt += 1
-                    tot_mad_err = torch.cat([tot_mad_err, self.model.mad_error], dim=0)
-                    tot_side_err = torch.cat([tot_side_err, self.model.side_error], dim=0)
-                    tot_side_err_v2 = torch.cat([tot_side_err_v2, self.model.side_error_v2], dim=0)
+                    tot_mad_err = torch.cat([tot_mad_err, self.model.mad_error_], dim=0)
+                    tot_side_err = torch.cat([tot_side_err, self.model.side_error_], dim=0)
+                    tot_side_err_v2 = torch.cat([tot_side_err_v2, self.model.side_error_v2_], dim=0)
         
         print("--------------------------------------------------")
         print("side err mean: ", tot_side_err.mean(), "side err std: ", tot_side_err.std())
