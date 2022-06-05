@@ -65,6 +65,8 @@ class Trainer():
         os.makedirs(self.save_path, exist_ok=True)
         self.best_path = path.join(self.save_path, 'best.pt')
 
+        self.test_result_dir = self.save_path
+
         '''logger setting'''
         self.writer = SummaryWriter(path.join(self.exp_path, 'logs'))
         self.save_epoch = configs['save_epoch']
@@ -302,9 +304,9 @@ class Trainer():
         print("mad err mean: ", tot_mad_err.mean().cpu().item(), "mad err std: ", tot_mad_err.std().cpu().item())
         print("--------------------------------------------------")
 
-        with torch.no_grad():
-            m = self.run_epoch(self.test_loader, epoch=self.current_epoch, is_test=True)
+        # with torch.no_grad():
+        #     m = self.run_epoch(self.test_loader, epoch=self.current_epoch, is_test=True)
 
-        score_path = os.path.join(self.test_result_dir, 'eval_scores.txt')
-        self.model.save_scores(score_path)
+        # score_path = os.path.join(self.test_result_dir, 'eval_scores.txt')
+        # self.model.save_scores(score_path)
         ############################## borrowed from author's code! ##############################
