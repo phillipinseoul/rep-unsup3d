@@ -204,7 +204,7 @@ class PhotoGeoAE(nn.Module):
             self.canon_im_rotate = self.canon_im_rotate.detach().cpu() /2.+0.5
             self.shading_rotate = self.shading_rotate.detach().cpu() /2.+0.5
             # self.canon_normal_rotate = visualizer.render_result(self.normal.permute(0,3,1,2), self.depth).detach().cpu() /2.+0.5  # (B,T,C,H,W)
-            self.canon_normal_rotate, _ = visualizer.render_result(self.normal[:4], self.depth[:4])  # (B,T,C,H,W)
+            self.canon_normal_rotate, _ = visualizer.render_result(self.normal, self.depth)  # (B,T,C,H,W)
             self.canon_normal_rotate = self.canon_normal_rotate.detach().cpu() /2.+0.5
 
         return self.tot_loss

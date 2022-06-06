@@ -70,6 +70,7 @@ class BFM(Dataset):
 
         self.WITH_PERTURB = w_perturb
         self.crop = 170
+        # self.crop = 192
         
         self.path = path.join(BFM_PATH, setting)
         self.img_path = path.join(self.path, 'image')       # path for images
@@ -110,58 +111,18 @@ class BFM(Dataset):
         hflip = self.is_train and (np.random.rand() > 0.5)
 
         img = self.transform(img_A, hflip=hflip)
+
+        if self.WITH_PERTURB:
+           img = asym_perturb(img)
+        
         depth = self.transform(img_B, hflip=hflip)
         depth = (1-depth) * 0.2 + 0.9
         
         return img, depth[0:1,:,:]
 
-    '''
-    def __getitem__(self, idx):
-        #return both image and gt depth_map as tensor.
-
-        #crop settings
-        top = int(self.img_size[0] * self.crop_rate)            # crop out `crop_rate` of top, bottom, left, right
-        bottom = int(self.img_size[0] * (1-self.crop_rate))
-
-        #resize image
-        img = cv2.imread(path.join(self.img_path, self.img_gt_pairs[idx][0]))
-
-        re_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        re_img = cv2.resize(re_img, self.img_size, interpolation = cv2.INTER_LINEAR)
-        re_img = re_img[top:bottom, top:bottom]                     # cropping
-        re_img = cv2.resize(re_img, self.img_size, interpolation = cv2.INTER_LINEAR)
-        re_img = torch.tensor(re_img, dtype = torch.float32)
-        re_img = re_img.permute(2, 0, 1)                    # 3 x H x W
-        re_img /= MAX_PIX                                   # change value range 0~1
-
-        #resize gt depth map
-        gt_depth = cv2.imread(path.join(self.gt_path, self.img_gt_pairs[idx][1]))
-        
-        #re_depth = cv2.cvtColor(gt_depth, cv2.COLOR_BGR2GRAY)
-        re_depth = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
-        re_depth = re_depth[top:bottom, top:bottom]                 # add image cropping
-        re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
-        re_depth = torch.tensor(re_depth, dtype = torch.float32)#.unsqueeze(-1)
-        re_depth = re_depth.permute(2, 0, 1)                  # 1 x H x W
-        re_depth /= MAX_PIX                                   # change value range 0~1
-        re_depth = (1 - re_depth) * 0.2 + 0.9                 # depth: 0.9 ~1.1
-        re_depth = re_depth[0:1,:,:]
-
-
-        if np.random.rand() > 0.5:
-            re_img = transforms.functional.hflip(re_img)
-            re_depth = transforms.functional.hflip(re_depth)
-
-        if self.WITH_PERTURB:
-           re_img = asym_perturb(re_img)
-        
-        return re_img, re_depth
-    '''
     def __len__(self):
         return len(self.img_gt_pairs)
         # return 64 * 100
-
 
 
 def asym_perturb(image_tensor):
@@ -205,3 +166,46 @@ def get_rand_patch(H, W, P_H, P_W):
 
 
 
+'''
+    def __getitem__(self, idx):
+        #return both image and gt depth_map as tensor.
+
+        #crop settings
+        top = int(self.img_size[0] * self.crop_rate)            # crop out `crop_rate` of top, bottom, left, right
+        bottom = int(self.img_size[0] * (1-self.crop_rate))
+
+        #resize image
+        img = cv2.imread(path.join(self.img_path, self.img_gt_pairs[idx][0]))
+
+        re_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        re_img = cv2.resize(re_img, self.img_size, interpolation = cv2.INTER_LINEAR)
+        re_img = re_img[top:bottom, top:bottom]                     # cropping
+        re_img = cv2.resize(re_img, self.img_size, interpolation = cv2.INTER_LINEAR)
+        re_img = torch.tensor(re_img, dtype = torch.float32)
+        re_img = re_img.permute(2, 0, 1)                    # 3 x H x W
+        re_img /= MAX_PIX                                   # change value range 0~1
+
+        #resize gt depth map
+        gt_depth = cv2.imread(path.join(self.gt_path, self.img_gt_pairs[idx][1]))
+        
+        #re_depth = cv2.cvtColor(gt_depth, cv2.COLOR_BGR2GRAY)
+        re_depth = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
+        re_depth = re_depth[top:bottom, top:bottom]                 # add image cropping
+        re_depth = cv2.resize(re_depth, self.img_size, interpolation = cv2.INTER_LINEAR)
+        re_depth = torch.tensor(re_depth, dtype = torch.float32)#.unsqueeze(-1)
+        re_depth = re_depth.permute(2, 0, 1)                  # 1 x H x W
+        re_depth /= MAX_PIX                                   # change value range 0~1
+        re_depth = (1 - re_depth) * 0.2 + 0.9                 # depth: 0.9 ~1.1
+        re_depth = re_depth[0:1,:,:]
+
+
+        if np.random.rand() > 0.5:
+            re_img = transforms.functional.hflip(re_img)
+            re_depth = transforms.functional.hflip(re_depth)
+
+        if self.WITH_PERTURB:
+           re_img = asym_perturb(re_img)
+        
+        return re_img, re_depth
+    '''
