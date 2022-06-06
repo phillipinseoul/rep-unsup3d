@@ -1,31 +1,21 @@
-# Reproducing Unsup3D for CS492(A): Machine Learning for 3D Data (22' )
+# Reproducing Unsup3D for CS492(A): Machine Learning for 3D Data (22' Spring)
 
 By Yuseung Lee & Inhee Lee
 
 ## Environment Setting
 We recommend you to use this model 
 
-
 ## How to run the code
 You need to modify configs file first before train or test the model. We recommend you to use bfm_template.yml in configs/ablation/ as template.
-
-
 
 We provide dataloader for BFM datasets and CelebA. 
 Here is the link for both datasets. (This link will be closed after evaluation of CS492(A))
 
 gdrive : 
 
-
-
 ```bash
 $ python run.py --configs configs/bfm_train_v0.yaml
-$ tensorboard --logdir /logs/exp_054144 --port 6001
-```
-
-#### 05/16 How to run
-```bash
-python run.py --configs configs/celeba_train_v0.yaml
+$ tensorboard --logdir /logs/ --port 6001
 ```
 
 #### Depth Map to Normal Map
