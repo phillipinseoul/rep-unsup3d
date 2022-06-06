@@ -11,18 +11,16 @@ You need to modify configs file first before train or test the model. We recomme
 We provide dataloader for BFM datasets and CelebA. 
 Here is the link for both datasets. (This link will be closed after evaluation of CS492(A))
 
-gdrive : 
+dataset gdrive : https://drive.google.com/drive/folders/1AzvmOGHv-4xLKotcAaP0pkeALRoMkGNp?usp=sharing
+pretrained gdrive : https://drive.google.com/drive/folders/17101Jj5PcCqmb1ywRzmcriONTGOHZCDj?usp=sharing
 
+
+codes to be runned
 ```bash
 $ python run.py --configs configs/bfm_train_v0.yaml
 $ tensorboard --logdir /logs/ --port 6001
 ```
 
-#### Depth Map to Normal Map
-Initial test code at `unsup3d/test_repo/test_normal.py`
-```bash
-python test_normal.py
-```
 * exmaples on BFM and CelebA
 ![image](https://user-images.githubusercontent.com/65122489/172181746-95db1bf6-a59f-41de-ace2-4067cad181a6.png)
 * Pipdline of Unsup3D
