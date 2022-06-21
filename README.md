@@ -28,19 +28,15 @@
   <p align="center">
     Project for KAIST CS492(A): Machine Learning for 3D Data (22' Spring), by Yuseung Lee and Inhee Lee.
     <br /><br />
-    <a href="https://github.com/github_username/repo_name">Report</a>
+    <a href="https://github.com/phillipinseoul/unsup3d-rep/blob/main/report.pdf">Report</a>
     ·
-    <a href="https://github.com/github_username/repo_name/issues">Results</a>
+    <a href="https://github.com/phillipinseoul/unsup3d-rep/blob/main/supplementary.pdf">Results</a>
   </p>
 </div>
 
-
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
-
-Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following: `github_username`, `repo_name`, `twitter_handle`, `linkedin_username`, `email_client`, `email`, `project_title`, `project_description`
+In this project, we present the reproduction results of [Unsup3D](https://arxiv.org/abs/1911.11130) from scratch and the challenges we faced during the implementation. The objective of Unsup3D is to learn the underlying 3D shape from single 2D images without any supervision. It decomposes the input into four visual components and reconstructs it through photo-geometric autoencoder. To obatain a geometric cue, Unsup3D applies symmetric assumption and introduces a confidence map. We implemented most parts of Unsup3D excluding the neural renderer and resolved CUDA-related issues with gradient clipping. Our implementation achieves close performance to the original paper and the author’s code trained on our environment.
 
 ### Built With
 
